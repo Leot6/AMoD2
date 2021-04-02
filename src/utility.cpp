@@ -49,26 +49,6 @@ void CheckFileExistence(const std::string& path_to_file) {
     }
 }
 
-std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv) {
-  CheckFileExistence(path_to_csv);
-  auto s_time = getTimeStamp();
-  std::vector<Request> all_requests = {};
-  using namespace csv;
-  CSVReader reader(path_to_csv);
-
-
-  for (CSVRow& row: reader) { // Input iterator
-    auto onid = row["onid"].get<size_t>();
-    auto dnid = row["dnid"].get<size_t>();
-    auto request_time = row["ptime"].get();
-    auto request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request_time);
-    all_requests.emplace_back(onid,dnid,request_time_ms, request_time);
-  }
-
-  fmt::print("[DEBUG] ({}s) Load request data from {}, with {} requests.\n",
-             float (getTimeStamp() - s_time)/1000, path_to_csv, all_requests.size());
-  return std::move(all_requests);
-}
 
 std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);

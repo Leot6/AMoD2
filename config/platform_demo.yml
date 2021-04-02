@@ -23,7 +23,7 @@ mod_system_config:
     request_density: 0.1
     max_pickup_wait_time_s: 600
 simulation_config:
-  simulation_start_time: "2015-05-25 00:00:00"
+  simulation_start_time: "2016-05-25 00:00:00"
   cycle_s: 20
   warmup_duration_s: 0
   simulation_duration_s: 100

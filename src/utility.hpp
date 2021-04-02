@@ -32,13 +32,14 @@ int32_t ComputeTheAccumulatedSecondsFrom0Clock(std::string time_date);
 std::time_t getTimeStamp();
 
 #define TIMER_START(FUNC) auto FUNC = getTimeStamp();
-#define TIMER_END(FUNC) std::cout << "[" << #FUNC << "]" << " cost time: " << (static_cast<float>(getTimeStamp() - FUNC)/1000.0f) << "s" << std::endl;
+#define TIMER_END(FUNC) std::cout << "[" << #FUNC << "]" << " cost time: " << \
+(static_cast<float>(getTimeStamp() - FUNC)/1000.0f) << "s" << std::endl;
 
 /// \brief A function to check whether the data file is existing.
 void CheckFileExistence(const std::string& path_to_file);
 
 /// \brief A function loading the taxi trip data from a csv file.
-std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv);
+
 
 /// \brief A function loading the road network node data from a csv file.
 std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv);

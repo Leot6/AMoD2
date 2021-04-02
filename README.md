@@ -4,12 +4,10 @@ An C++ based autonomous mobility-on-demand simulator. Based on [mod-abm-2.0](htt
 
 ### Build `mod-abm-2.0`
 
-To run a samulation, download data files from [this google drive link](https://drive.google.com/drive/folders/1Q0ZK3c8B8tjd7vO5UsgKXCJPDVr8mGVt?usp=sharing), and put the data folder in the root directory.
+To run a simulation, download data files from [this google drive link](https://drive.google.com/drive/folders/1Q0ZK3c8B8tjd7vO5UsgKXCJPDVr8mGVt?usp=sharing), and put the data folder in the root directory.
 ```
 |-- AMoD2
-   |-- config
    |-- data-gitignore
-   |-- doc
    |-- output-gitignore
 ```
 

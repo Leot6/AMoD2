@@ -29,5 +29,6 @@ datalog-gitignore/
 media-gitignore/
 
 # others
+test_gitignore.cpp
 .idea
 test/

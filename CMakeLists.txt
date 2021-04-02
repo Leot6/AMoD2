@@ -1,8 +1,8 @@
 # Works with 3.11 and tested through 3.19
 cmake_minimum_required(VERSION 3.11...3.19)
 
-#set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_BUILD_TYPE Debug)
 
 # Project name and a few useful settings. Other commands can pick up the results
 project(
@@ -36,9 +36,9 @@ add_executable(main src/main.cpp)
 target_link_libraries(main mod-abm-lib yaml-cpp fmt::fmt ${LibOSRM_LIBRARIES} ${LibOSRM_DEPENDENT_LIBRARIES})
 target_compile_features(main PRIVATE cxx_std_17)
 
-add_executable(data_preprocessor src/data_preprocessor.cpp)
-target_link_libraries(data_preprocessor mod-abm-lib yaml-cpp fmt::fmt ${LibOSRM_LIBRARIES} ${LibOSRM_DEPENDENT_LIBRARIES})
-target_compile_features(data_preprocessor PRIVATE cxx_std_17)
+add_executable(test_gitignore src/test_gitignore.cpp)
+target_link_libraries(test_gitignore mod-abm-lib yaml-cpp fmt::fmt ${LibOSRM_LIBRARIES} ${LibOSRM_DEPENDENT_LIBRARIES})
+target_compile_features(test_gitignore PRIVATE cxx_std_17)
 
 # More linking for LibOSRM
 link_directories(${LibOSRM_LIBRARY_DIRS})
