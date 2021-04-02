@@ -1,5 +1,5 @@
 # `AMoD2` 
-An C++ based autonomous mobility-on-demand simulator. Based on [mod-abm-2.0](https://github.com/wenjian0202/mod-abm-2.0). This simulator uses map data and taxi data from Manhattan.
+An autonomous mobility-on-demand simulator, based on [mod-abm-2.0](https://github.com/wenjian0202/mod-abm-2.0). This simulator uses map data and taxi data from Manhattan.
 
 
 ### Build `mod-abm-2.0`
