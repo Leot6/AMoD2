@@ -62,7 +62,7 @@ std::vector<Request> DemandGenerator::LoadRequestsFromCsvFile(std::string path_t
         auto onid = row["onid"].get<size_t>();
         auto dnid = row["dnid"].get<size_t>();
         auto request_time_date = row["ptime"].get();
-        auto request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request_time_date);
+        auto request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request_time_date) * 1000;
         all_requests.emplace_back(onid,dnid,request_time_ms, request_time_date);
     }
     fmt::print("[DEBUG] ({}s) Load request data from {}, with {} requests.\n",
@@ -87,7 +87,7 @@ std::vector<Request> DemandGenerator::LoadRequestsFromCsvFile_naive_version(std:
         auto onid = std::stoi(data_line[2]);
         auto dnid = std::stoi(data_line[5]);
         auto request_time_date = data_line[0];
-        auto request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request_time_date);
+        auto request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request_time_date) * 1000;
         all_requests.emplace_back(onid,dnid,request_time_ms, request_time_date);
     }
     fmt::print("[DEBUG] ({}s) Load request data from {}, with {} requests.\n",

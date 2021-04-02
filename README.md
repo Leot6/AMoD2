@@ -4,7 +4,7 @@ An autonomous mobility-on-demand simulator, based on [mod-abm-2.0](https://githu
 
 ### Build `mod-abm-2.0`
 
-To run a simulation, download data files from [this google drive link](https://drive.google.com/drive/folders/1Q0ZK3c8B8tjd7vO5UsgKXCJPDVr8mGVt?usp=sharing), and put the data folder in the root directory.
+To run a simulation, download data files from [this onedrive link](https://1drv.ms/u/s!AsqflzzqZj9qg-8-rT_CpBIZhc2pzw?e=TtYGfD) or [this google drive link](https://drive.google.com/drive/folders/1Q0ZK3c8B8tjd7vO5UsgKXCJPDVr8mGVt?usp=sharing), and put the downloaded folders in the root directory.
 ```
 |-- AMoD2
    |-- data-gitignore
