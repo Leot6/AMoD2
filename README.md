@@ -24,7 +24,7 @@ cmake --build build
 
 Once the build is complete, try the exmaple command line that runs the demo simulation:
 ```
-./build/main "./config/platform_demo.yml"
+./build/main
 ```
 Or:
 
