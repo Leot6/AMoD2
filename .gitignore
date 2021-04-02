@@ -1,0 +1,33 @@
+# Ignore CI build directory
+build/
+
+# Visual Studio files
+.vs
+.vscode
+*.sdf
+*.opensdf
+*.VC.opendb
+*.suo
+*.user
+_ReSharper.Caches/
+Win32-Debug/
+Win32-Release/
+x64-Debug/
+x64-Release/
+
+# macOS files
+.DS_Store
+
+# clang
+.clang-format
+
+# Clion files
+cmake-build-debug/
+
+# large data file
+datalog-gitignore/
+media-gitignore/
+
+# others
+.idea
+test/
