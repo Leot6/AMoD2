@@ -21,7 +21,7 @@ class Router {
     RoutingResponse operator()(const Pos &origin, const Pos &destination, RoutingType type);
 
     /// \brief Main functor that finds the shortest route for an O/D pair on request.
-    RoutingResponse Routing(const size_t &onid, const size_t &dnid, RoutingType type);
+    RoutingResponse Routing(const Pos &origin, const Pos &destination, RoutingType type);
 
     /// \brief Get the node_id of a station.
     size_t getVehicleStationId(const size_t &station_index);
@@ -51,8 +51,16 @@ private:
 
     /// \brief The precomputed look-up table, storing the travel distance between each road node pair.
     std::vector<std::vector<float>> travel_distance_table_;
-
 };
+
+/// \brief A function loading the road network node data from a csv file.
+std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv);
+
+/// \brief A function loading the precomputed minimum mean travel time path of each node pair from a csv file.
+std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_to_csv);
+
+/// \brief A function loading the precomputed mean travel time of each node pair from a csv file.
+std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string path_to_csv);
 
 /// \brief Convert the json route data into the c++ data struct.
 Route convert_json_to_route(osrm::json::Object route_json);

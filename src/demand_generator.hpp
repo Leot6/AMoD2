@@ -41,8 +41,7 @@ class DemandGenerator {
 
     /// \brief // The percentage of taxi data considered.
     float request_density_ = 1.0;
-
-    /// \brief // A function loading the taxi trip data from a csv file.
-    static std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv);
-    static std::vector<Request> LoadRequestsFromCsvFile_naive_version(std::string path_to_csv);
 };
+
+/// \brief // A function loading the taxi trip data from a csv file.
+static std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv);

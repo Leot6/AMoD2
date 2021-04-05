@@ -21,6 +21,7 @@ DemandGenerator::DemandGenerator(std::string _path_to_taxi_data, std::string _si
     request_density_ = _request_density;
     fmt::print("[INFO] ({}s) Calculate the initial request index {} ({}).\n",
                float (getTimeStamp() - s_time)/1000, init_request_idx_, _simulation_start_time);
+    fmt::print("[INFO] Demand Generator is ready.\n");
 }
 
 std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms) {
@@ -52,7 +53,7 @@ const std::vector<Request> &DemandGenerator::GetAllRequests() const {
     return all_requests_;
 }
 
-std::vector<Request> DemandGenerator::LoadRequestsFromCsvFile(std::string path_to_csv) {
+std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
     auto s_time = getTimeStamp();
     std::vector<Request> all_requests = {};
@@ -65,32 +66,7 @@ std::vector<Request> DemandGenerator::LoadRequestsFromCsvFile(std::string path_t
         auto request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request_time_date) * 1000;
         all_requests.emplace_back(onid,dnid,request_time_ms, request_time_date);
     }
-    fmt::print("[DEBUG] ({}s) Load request data from {}, with {} requests.\n",
+    fmt::print("[INFO] ({}s) Load request data from {}, with {} requests.\n",
                float (getTimeStamp() - s_time)/1000, path_to_csv, all_requests.size());
-    return std::move(all_requests);
-}
-
-std::vector<Request> DemandGenerator::LoadRequestsFromCsvFile_naive_version(std::string path_to_csv) {
-    CheckFileExistence(path_to_csv);
-    auto s_time = getTimeStamp();
-    std::vector<Request> all_requests = {};
-    std::ifstream taxi_data_csv(path_to_csv); //load the taxi data file
-    std::string line;
-    getline(taxi_data_csv,line);  // ignore the first line
-    while (getline(taxi_data_csv,line)){  // read every line
-        std::istringstream readstr(line); // string every line
-        std::vector<std::string> data_line;
-        std::string info;
-        while (getline(readstr, info, ',')) {
-            data_line.push_back(info);
-        }
-        auto onid = std::stoi(data_line[2]);
-        auto dnid = std::stoi(data_line[5]);
-        auto request_time_date = data_line[0];
-        auto request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request_time_date) * 1000;
-        all_requests.emplace_back(onid,dnid,request_time_ms, request_time_date);
-    }
-    fmt::print("[DEBUG] ({}s) Load request data from {}, with {} requests.\n",
-               double (getTimeStamp() - s_time)/1000, path_to_csv, all_requests.size());
     return std::move(all_requests);
 }

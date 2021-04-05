@@ -46,7 +46,6 @@ struct Route {
 
 /// \brief The type of the routing call.
 enum class RoutingType {
-    UNDEFINED, // uninitialized value
     TIME_ONLY, // only return the total travel time and distance
     FULL_ROUTE // return the full route with detailed maneuvers
 };

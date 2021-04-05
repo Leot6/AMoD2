@@ -27,6 +27,7 @@ cmake-build-debug/
 # large data file
 datalog-gitignore/
 media-gitignore/
+*.csv
 
 # others
 test_gitignore.cpp

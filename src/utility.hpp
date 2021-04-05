@@ -4,8 +4,8 @@
 
 #pragma once
 #include "types.hpp"
-//#include "rapidcsv.h"
 #include "csv.hpp"
+#include "router.hpp"
 
 #include <sys/stat.h>
 #include <fmt/format.h>
@@ -21,8 +21,8 @@
 /// \brief A function converting "%Y-%m-%d %H:%M:%S" to seconds.
 int32_t ConvertTimeDateToSeconds(std::string time_date);
 
-/// \brief A function converting seconds to "%Y-%m-%d %H:%M:%S".
-std::string ConvertTimeSecondToDate(int32_t time_sec);
+///// \brief A function converting seconds to "%Y-%m-%d %H:%M:%S".
+//std::string ConvertTimeSecondToDate(int32_t time_sec);
 
 /// \brief A function computing the accumulated seconds of the day from "%Y-%m-%d %H:%M:%S",
 /// e.g. "2015-05-25 01:00:00" -> 3600
@@ -38,14 +38,6 @@ std::time_t getTimeStamp();
 /// \brief A function to check whether the data file is existing.
 void CheckFileExistence(const std::string& path_to_file);
 
-/// \brief A function loading the taxi trip data from a csv file.
+/////// \brief A function saving data to a csv file.
+//void saveTwoDimentionArr2csv(std::vector<std::vector<float>> &arr, int row, int col, char*filename);
 
-
-/// \brief A function loading the road network node data from a csv file.
-std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv);
-
-/// \brief A function loading the precomputed minimum mean travel time path of each node pair from a csv file.
-std::vector<std::vector<size_t>> LoadShortestPathTableFromCsvFile(std::string path_to_csv);
-
-/// \brief A function loading the precomputed mean travel time of each node pair from a csv file.
-std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string path_to_csv);

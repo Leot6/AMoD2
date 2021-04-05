@@ -56,6 +56,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         fmt::print("[INFO] Opened the output datalog file at {}.\n",
                    datalog_config.path_to_output_datalog);
     }
+    fmt::print("[INFO] Platform is ready.\n");
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
