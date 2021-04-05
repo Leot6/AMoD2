@@ -7,7 +7,6 @@ set(CMAKE_BUILD_TYPE Release)
 # Project name and a few useful settings. Other commands can pick up the results
 project(
   AMoD2
-  VERSION 0.1
   DESCRIPTION "An agent-based modeling platform for mobility-on-demand simulations"
   LANGUAGES CXX)
 
@@ -66,17 +65,3 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
   GIT_TAG yaml-cpp-0.6.3)
 FetchContent_MakeAvailable(yaml-cpp)
-
-# Add Google test suite
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        release-1.8.0
-)
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-  FetchContent_Populate(googletest)
-  message(STATUS ${googletest_SOURCE_DIR})
-  message(STATUS ${googletest_BINARY_DIR})
-  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
-endif()

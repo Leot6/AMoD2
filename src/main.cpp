@@ -33,7 +33,7 @@ int main(int argc, const char *argv[]) {
                    "[ERROR] \n"
                    "- Usage: <prog name> <arg1>. \n"
                    "  <arg1> is the path to the platform config file. \n"
-                   "- Example: ./build/main \"./config/platform_demo.yml\"  \n");
+                   "- Example: {} \"./config/platform_demo.yml\"  \n",argv[0]);
         return -1;
     }
     CheckFileExistence(path_to_config_file);

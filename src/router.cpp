@@ -126,7 +126,7 @@ std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv) {
         node.lat = std::stof(data_line[2]);
         all_nodes.push_back(node);
     }
-    fmt::print("[DEBUG] ({}s) Loaded node data from {}, with {} nodes.\n",
+    fmt::print("[INFO] ({}s) Loaded node data from {}, with {} nodes.\n",
                float(getTimeStamp() - s_time) / 1000, path_to_csv, all_nodes.size());
     return std::move(all_nodes);
 }
@@ -150,7 +150,7 @@ std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_
         }
         shortest_path_table.push_back(int_row);
     }
-    fmt::print("[DEBUG] ({}s) Loaded shortest path data from {}, with {} * {} node pairs.\n",
+    fmt::print("[INFO] ({}s) Loaded shortest path data from {}, with {} * {} node pairs.\n",
                float(getTimeStamp() - s_time) / 1000, path_to_csv,
                shortest_path_table.size(), shortest_path_table[0].size());
     return shortest_path_table;
@@ -175,7 +175,7 @@ std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string p
         }
         mean_travel_time_table.push_back(float_row);
     }
-    fmt::print("[DEBUG] ({}s) Loaded shortest path data from {}, with {} * {} node pairs.\n",
+    fmt::print("[INFO] ({}s) Loaded shortest path data from {}, with {} * {} node pairs.\n",
                float(getTimeStamp() - s_time) / 1000, path_to_csv,
                mean_travel_time_table.size(), mean_travel_time_table[0].size());
     return mean_travel_time_table;
