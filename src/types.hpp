@@ -5,9 +5,9 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <osrm/json_container.hpp>
 #include <string>
 #include <utility>
+#include <cassert>
 
 
 
@@ -84,7 +84,6 @@ struct Request {
   size_t destination_node_id;
   uint64_t request_time_ms = 0;
   std::string request_time_date = "0000-00-00 00:00:00";
-//    char request_time_date[20];  // we use char here to avoid a bug in binary file storing process
 };
 
 /// \brief The status of the order.
@@ -112,7 +111,7 @@ inline std::string to_string(const OrderStatus &s) {
         return "WALKAWAY";
     }
 
-    assert(false && "Bad OrderStatus type!");
+//    assert(false && "Bad OrderStatus type!");
 }
 
 /// \brief The order that the simulation managed, containing all relavant data.

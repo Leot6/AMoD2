@@ -7,7 +7,6 @@
 
 /// \brief Config that describes the data file path.
 struct DataFilePath {
-    std::string path_to_osrm = "";
     std::string path_to_vehicle_stations = "";
     std::string path_to_network_nodes = "";
     std::string path_to_shortest_path_table = "";
@@ -83,4 +82,4 @@ struct PlatformConfig {
 };
 
 /// \brief Load yaml platform config and convert into the C++ data struct.
-PlatformConfig load_platform_config(const std::string &path_to_platform_config);
+PlatformConfig load_platform_config(const std::string &path_to_platform_config, const std::string &root_directory);

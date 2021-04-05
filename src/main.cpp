@@ -14,10 +14,17 @@
 #include <yaml-cpp/yaml.h>
 
 int main(int argc, const char *argv[]) {
+    // get the root directory
+    const int MAXPATH=250;
+    char buffer[MAXPATH];
+    getcwd(buffer, MAXPATH);
+    std::string build_file_directory = buffer;
+    auto root_directory = build_file_directory.substr(0, build_file_directory.find("AMoD2") + 5);
+
     // Check the input arugment list.
     std::string path_to_config_file;
     if (argc == 1){
-        path_to_config_file = "./config/platform_demo.yml";
+        path_to_config_file = root_directory + "/config/platform_demo.yml";
     } else if (argc == 2){
         CheckFileExistence((std::string &) argv[1]);
         path_to_config_file = argv[1];
@@ -26,13 +33,13 @@ int main(int argc, const char *argv[]) {
                    "[ERROR] \n"
                    "- Usage: <prog name> <arg1>. \n"
                    "  <arg1> is the path to the platform config file. \n"
-                   "- Example: {} \"./config/platform_demo.yml\"  \n",argv[0]);
+                   "- Example: ./build/main \"./config/platform_demo.yml\"  \n");
         return -1;
     }
     CheckFileExistence(path_to_config_file);
-    auto platform_config = load_platform_config(path_to_config_file);
+    auto platform_config = load_platform_config(path_to_config_file, root_directory);
 
-    // Initiate the router with the osrm data.
+    // Initiate the router.
     Router router{platform_config.data_file_path};
 
 //    // debug code
@@ -46,12 +53,6 @@ int main(int argc, const char *argv[]) {
 //    fmt::print("  table (full): route1 takes {}s and {}m. ({}ps)\n",
 //               (float)route_response11.route.duration_ms/1000, (float)route_response11.route.distance_mm/1000,
 //               float (getTimeStamp() - s_time)*pow(10, 12));
-//
-//    s_time = getTimeStamp();
-//    auto route_response22 = router.Routing(origin1, destination1, RoutingType::FULL_ROUTE);
-//    fmt::print("  osrm (full): route2 takes {}s and {}m. ({}ms)\n",
-//               (float)route_response22.route.duration_ms/1000, (float)route_response22.route.distance_mm/1000,
-//               float (getTimeStamp() - s_time));
 
 //    fmt::print("[DEBUG] route 1 has {} legs, first leg ({}s, {}m) has {} steps\n",
 //               route_response11.route.legs.size(),
@@ -63,20 +64,6 @@ int main(int argc, const char *argv[]) {
 //        fmt::print("[DEBUG] printing step {} ({} poses), t = {}s, d = {}m\n",
 //                   i+1, steps1[i].poses.size(), (float)steps1[i].duration_ms/1000, (float)steps1[i].distance_mm/1000);
 //        auto & poses = steps1[i].poses;
-//        for (int j = 0; j < poses.size(); j++) {
-//            fmt::print("      printing pos {} ({}, {}) \n", j+1, poses[j].lon, poses[j].lat);
-//        }
-//    }
-//    fmt::print("[DEBUG] route 2 has {} legs, first leg ({}s, {}m) has {} steps\n",
-//               route_response22.route.legs.size(),
-//               (float)route_response22.route.legs[0].duration_ms/1000,
-//               (float)route_response22.route.legs[0].distance_mm/1000,
-//               route_response22.route.legs[0].steps.size());
-//    auto & steps2 = route_response22.route.legs[0].steps;
-//    for (int i = 0; i< steps2.size(); i++) {
-//        fmt::print("[DEBUG] printing step {} ({} poses), t = {}s, d = {}m\n",
-//                   i+1, steps2[i].poses.size(), (float)steps2[i].duration_ms/1000, (float)steps2[i].distance_mm/1000);
-//        auto & poses = steps2[i].poses;
 //        for (int j = 0; j < poses.size(); j++) {
 //            fmt::print("      printing pos {} ({}, {}) \n", j+1, poses[j].lon, poses[j].lat);
 //        }

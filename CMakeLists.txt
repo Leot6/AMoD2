@@ -18,8 +18,7 @@ project(
 # Define the path to cmake files
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Find all required libraries including the OSRM-backend library(LibOSRM)
-find_package(LibOSRM REQUIRED)
+# Find all required libraries
 find_package(Boost 1.52.0 COMPONENTS filesystem system thread iostreams chrono date_time regex REQUIRED)
 
 ########################################################################
@@ -33,17 +32,18 @@ target_compile_features(mod-abm-lib PRIVATE cxx_std_17)
 
 # The executable
 add_executable(main src/main.cpp)
-target_link_libraries(main mod-abm-lib yaml-cpp fmt::fmt ${LibOSRM_LIBRARIES} ${LibOSRM_DEPENDENT_LIBRARIES})
+target_link_libraries(main mod-abm-lib yaml-cpp fmt::fmt)
+
 target_compile_features(main PRIVATE cxx_std_17)
 
 add_executable(test_gitignore src/test_gitignore.cpp)
-target_link_libraries(test_gitignore mod-abm-lib yaml-cpp fmt::fmt ${LibOSRM_LIBRARIES} ${LibOSRM_DEPENDENT_LIBRARIES})
+target_link_libraries(test_gitignore mod-abm-lib yaml-cpp fmt::fmt)
+
 target_compile_features(test_gitignore PRIVATE cxx_std_17)
 
 # More linking for LibOSRM
-link_directories(${LibOSRM_LIBRARY_DIRS})
-include_directories(SYSTEM ${LibOSRM_INCLUDE_DIRS})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LibOSRM_CXXFLAGS}")
+include_directories(SYSTEM)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 ########################################################################
 # Fetch Other Third-Party Libraries

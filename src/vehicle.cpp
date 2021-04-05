@@ -153,12 +153,12 @@ void truncate_route_by_time(Route &route, uint64_t time_ms) {
         route.duration_ms += leg.duration_ms;
     }
 
-    assert(route.legs.size() >= 1 &&
-           "Output route in truncate_route_by_time() must have at least 1 step!");
-    assert(route.distance_mm > 0 &&
-           "Output route's distance in truncate_route_by_time() must be positive!");
-    assert(route.duration_ms > 0 &&
-           "Output route's duration in truncate_route_by_time() must be positive!");
+//    assert(route.legs.size() >= 1 &&
+//           "Output route in truncate_route_by_time() must have at least 1 step!");
+//    assert(route.distance_mm > 0 &&
+//           "Output route's distance in truncate_route_by_time() must be positive!");
+//    assert(route.duration_ms > 0 &&
+//           "Output route's duration in truncate_route_by_time() must be positive!");
 }
 
 void advance_vehicle(Vehicle &vehicle,

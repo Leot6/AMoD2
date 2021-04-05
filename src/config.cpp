@@ -5,24 +5,22 @@
 
 #include <fmt/format.h>
 
-PlatformConfig load_platform_config(const std::string &path_to_platform_config) {
+PlatformConfig load_platform_config(const std::string &path_to_platform_config, const std::string &root_directory) {
     auto platform_config_yaml = YAML::LoadFile(path_to_platform_config);
 
     PlatformConfig platform_config;
 
-    platform_config.data_file_path.path_to_osrm =
-            platform_config_yaml["data_file_path"]["osrm"].as<std::string>();
-    platform_config.data_file_path.path_to_vehicle_stations =
+    platform_config.data_file_path.path_to_vehicle_stations = root_directory +
             platform_config_yaml["data_file_path"]["vehicle_stations"].as<std::string>();
-    platform_config.data_file_path.path_to_network_nodes =
+    platform_config.data_file_path.path_to_network_nodes = root_directory +
             platform_config_yaml["data_file_path"]["network_nodes"].as<std::string>();
-    platform_config.data_file_path.path_to_shortest_path_table =
+    platform_config.data_file_path.path_to_shortest_path_table = root_directory +
             platform_config_yaml["data_file_path"]["shortest_path_table"].as<std::string>();
-    platform_config.data_file_path.path_to_mean_travel_time_table =
+    platform_config.data_file_path.path_to_mean_travel_time_table = root_directory +
             platform_config_yaml["data_file_path"]["mean_travel_time_table"].as<std::string>();
-    platform_config.data_file_path.path_to_travel_distance_table =
+    platform_config.data_file_path.path_to_travel_distance_table = root_directory +
             platform_config_yaml["data_file_path"]["travel_distance_table"].as<std::string>();
-    platform_config.data_file_path.path_to_taxi_data =
+    platform_config.data_file_path.path_to_taxi_data = root_directory +
             platform_config_yaml["data_file_path"]["taxi_data"].as<std::string>();
 
     platform_config.area_config.lon_min =

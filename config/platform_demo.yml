@@ -3,13 +3,12 @@
 
 # We use Manhattan as our case study.
 data_file_path:
-  osrm: "../osrm/map/manhattan.osrm"
-  vehicle_stations: "./datalog-gitignore/map-data/stations-101.csv"
-  network_nodes: "./datalog-gitignore/map-data/nodes.csv"
-  shortest_path_table: "./datalog-gitignore/map-data/path-table.csv"
-  mean_travel_time_table: "./datalog-gitignore/map-data/mean-table.csv"
-  travel_distance_table: "./datalog-gitignore/map-data/dist-table.csv"
-  taxi_data: "./datalog-gitignore/taxi-data/manhattan-taxi-20160525.csv"
+  vehicle_stations: "/datalog-gitignore/map-data/stations-101.csv"
+  network_nodes: "/datalog-gitignore/map-data/nodes.csv"
+  shortest_path_table: "/datalog-gitignore/map-data/path-table.csv"
+  mean_travel_time_table: "/datalog-gitignore/map-data/mean-table.csv"
+  travel_distance_table: "/datalog-gitignore/map-data/dist-table.csv"
+  taxi_data: "/datalog-gitignore/taxi-data/manhattan-taxi-20160525.csv"
 area_config: 
   lon_min: -74.0300
   lon_max: -73.9030

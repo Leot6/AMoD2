@@ -209,7 +209,7 @@ void insert_order_to_vehicle(Order &order,
     auto new_schedule = generate_schedule(
         order, vehicle, pickup_index, dropoff_index, RoutingType::FULL_ROUTE, router_func);
 
-    assert(!new_schedule.empty() && "The generated new schedule should be never empty!");
+//    assert(!new_schedule.empty() && "The generated new schedule should be never empty!");
 
     order.status = OrderStatus::DISPATCHED;
     vehicle.schedule = std::move(new_schedule);
