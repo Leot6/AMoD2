@@ -129,7 +129,7 @@ RoutingResponse Router::Routing(const Pos &origin, const Pos &destination, Routi
     return response;
 }
 
-RoutingResponse Router::operator()Routing(const Pos &origin, const Pos &destination, RoutingType type) {
+RoutingResponse Router::operator()(const Pos &origin, const Pos &destination, RoutingType type) {
     RoutingResponse response;
     // onid: origin node id; dnid: destination node id
     auto onid = origin.node_id;
