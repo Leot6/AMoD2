@@ -30,6 +30,5 @@ media-gitignore/
 *.csv
 
 # others
-test_gitignore.cpp
 .idea
 test/
