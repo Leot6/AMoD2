@@ -213,6 +213,7 @@ void insert_order_to_vehicle(Order &order,
 
     order.status = OrderStatus::DISPATCHED;
     vehicle.schedule = std::move(new_schedule);
+    build_route_for_a_vehicle_schedule(vehicle, router_func);
 
     return;
 }

@@ -26,3 +26,27 @@ void advance_vehicle(Vehicle &vehicle,
                      uint64_t system_time_ms,
                      uint64_t time_ms,
                      bool update_vehicle_stats = true);
+
+template <typename RouterFunc>
+void build_route_for_a_vehicle_schedule(Vehicle &vehicle, RouterFunc &router_func) {
+    auto pos = vehicle.pos;
+    for (auto i = 0; i < vehicle.schedule.size(); i++) {
+        auto &wp = vehicle.schedule[i];
+        auto route_response = router_func(pos, wp.pos, RoutingType::FULL_ROUTE);
+        assert (wp.route.duration_ms == route_response.route.duration_ms &&
+                        wp.route.distance_mm == route_response.route.distance_mm);
+        wp.route = std::move(route_response.route);
+        pos = wp.pos;
+    }
+
+    if (vehicle.step_to_pos.duration_ms > 0) {
+        auto &first_leg_of_the_schedule = vehicle.schedule[0].route.legs[0];
+        first_leg_of_the_schedule.duration_ms += vehicle.step_to_pos.duration_ms;
+        first_leg_of_the_schedule.distance_mm += vehicle.step_to_pos.distance_mm;
+        first_leg_of_the_schedule.steps.insert(first_leg_of_the_schedule.steps.begin(), vehicle.step_to_pos);
+        vehicle.schedule[0].route.duration_ms = first_leg_of_the_schedule.duration_ms;
+        first_leg_of_the_schedule.distance_mm = first_leg_of_the_schedule.distance_mm;
+
+
+    }
+}

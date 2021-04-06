@@ -110,8 +110,7 @@ inline std::string to_string(const OrderStatus &s) {
     } else if (s == OrderStatus::WALKAWAY) {
         return "WALKAWAY";
     }
-
-//    assert(false && "Bad OrderStatus type!");
+    return "Bad OrderStatus type!";
 }
 
 /// \brief The order that the simulation managed, containing all relavant data.
@@ -121,7 +120,7 @@ struct Order {
     Pos destination;
     OrderStatus status = OrderStatus::UNDEFINED;
     int32_t request_time_ms = 0;
-    std::string request_time_date;
+    std::string request_time_date = "0000-00-00 00:00:00";
     int32_t max_pickup_time_ms = 0;
     int32_t pickup_time_ms = 0;
     int32_t dropoff_time_ms = 0;
@@ -150,6 +149,7 @@ struct Waypoint {
 struct Vehicle {
     size_t id;
     Pos pos;
+    Step step_to_pos;
     size_t capacity = 1;
     size_t load = 0;
     std::vector<Waypoint> schedule = {};

@@ -18,8 +18,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
     auto s_time = getTimeStamp();
     const auto &fleet_config = platform_config_.mod_system_config.fleet_config;
     auto num_of_stations = router_func_.getNumOfVehicleStations();
-    Vehicle vehicle{0, {0, 0, 0}, fleet_config.veh_capacity,
-                    0, {}, 0, 0, 0, 0};
+    Vehicle vehicle;
     for (auto i = 0; i < fleet_config.fleet_size; i++) {
         size_t station_idx = i * num_of_stations / fleet_config.fleet_size;
         vehicle.id = i;
@@ -164,7 +163,6 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::generate_orders()
         order.status = OrderStatus::REQUESTED;
         order.request_time_ms = request.request_time_ms;
         order.request_time_date = request.request_time_date;
-//        strcpy(order.request_time_date, request.request_time_date);
         order.max_pickup_time_ms =
             request.request_time_ms +
             static_cast<uint64_t>(

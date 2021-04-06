@@ -6,7 +6,8 @@
 #include "platform.hpp"
 #include "router.hpp"
 
-
+#undef NDEBUG
+#include <assert.h>
 #include <iostream>
 #include <cstddef>
 #include <cstdlib>
@@ -64,9 +65,9 @@ int main(int argc, const char *argv[]) {
 //        fmt::print("[DEBUG] printing step {} ({} poses), t = {}s, d = {}m\n",
 //                   i+1, steps1[i].poses.size(), (float)steps1[i].duration_ms/1000, (float)steps1[i].distance_mm/1000);
 //        auto & poses = steps1[i].poses;
-//        for (int j = 0; j < poses.size(); j++) {
-//            fmt::print("      printing pos {} ({}, {}) \n", j+1, poses[j].lon, poses[j].lat);
-//        }
+//        assert (poses.size() == 2);
+//        fmt::print("      printing pos {} ({}, {}) \n", poses[0].node_id, poses[0].lon, poses[0].lat);
+//        fmt::print("      printing pos {} ({}, {}) \n", poses[1].node_id, poses[1].lon, poses[1].lat);
 //    }
 //
 //    fmt::print("[INFO] Done\n");

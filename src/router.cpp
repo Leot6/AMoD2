@@ -4,6 +4,8 @@
 #include "router.hpp"
 
 #include <fmt/format.h>
+#undef NDEBUG
+#include <assert.h>
 
 #include <algorithm>
 #include <iostream>
@@ -58,37 +60,22 @@ RoutingResponse Router::operator()(const Pos &origin, const Pos &destination, Ro
             leg.duration_ms += step.duration_ms;
             leg.steps.push_back(step);
         }
-        // the last step of a leg is always of length 2,
-        // consisting of 2 identical points as a flag of the end of the leg
+        // the last step of a leg is always consisting of 2 identical points as a flag of the end of the leg
         Step flag_step;
         flag_step.distance_mm = 0;
         flag_step.duration_ms = 0;
         flag_step.poses.push_back(getNodePos(dnid));
         flag_step.poses.push_back(getNodePos(dnid));
         leg.steps.push_back(flag_step);
-        response.route.legs.push_back(leg);
+        response.route.legs.push_back(leg);  // a route in response always has one leg
 
-        // Debug code
-        if (response.route.duration_ms != leg.duration_ms) {
-            if (abs(response.route.duration_ms - leg.duration_ms) < 10) {
-
-            } else {
-                fmt::print("[ERROR]onid{}, dnid{}\n", onid, dnid);
-                fmt::print("leg.duration_ms {}, route.duration_ms{}\n",
-                           leg.duration_ms, response.route.duration_ms);
-                exit(0);
-            }
-        }
-        if (response.route.distance_mm != leg.distance_mm) {
-            if (abs(response.route.distance_mm - leg.distance_mm) < 10) {
-
-            } else {
-                fmt::print("[ERROR]onid{}, dnid{}\n", onid, dnid);
-                fmt::print("leg.distance_mm {}, route.distance_mm{}\n",
-                           leg.distance_mm, response.route.distance_mm);
-                exit(0);
-            }
-        }
+        // make sure that "response.route.duration_ms = leg.duration_ms"
+        int deviation_due_to_data_structure = 5;
+        assert(abs(response.route.duration_ms - leg.duration_ms) <= deviation_due_to_data_structure);
+        assert(abs(response.route.distance_mm - leg.distance_mm) <= deviation_due_to_data_structure);
+        response.route.duration_ms = leg.duration_ms;
+        response.route.distance_mm = leg.distance_mm;
+        assert(response.route.legs.size() == 1);
     }
     response.status = RoutingStatus::OK;
     return response;

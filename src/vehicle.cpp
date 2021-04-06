@@ -4,10 +4,15 @@
 #include "vehicle.hpp"
 
 #include <fmt/format.h>
+#undef NDEBUG
+#include <assert.h>
 
 void truncate_step_by_time(Step &step, uint64_t time_ms) {
-    assert(step.poses.size() >= 2 &&
-           "Input step in truncate_step_by_time() must have at least 2 poses!");
+    assert(step.poses.size() == 2 &&
+           "Input step in truncate_step_by_time() should have 2 poses!");
+    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
+               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
+               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
     assert(step.distance_mm > 0 &&
            "Input step's distance in truncate_step_by_time() must be positive!");
     assert(step.duration_ms > 0 &&
@@ -20,47 +25,16 @@ void truncate_step_by_time(Step &step, uint64_t time_ms) {
     }
 
     auto ratio = static_cast<double>(time_ms) / step.duration_ms;
-
-    // Get the total distance of the step. We use Mahhantan distance for simplicity.
-    auto total_dist = 0.0;
-    for (auto i = 0; i < step.poses.size() - 1; i++) {
-        total_dist += abs(step.poses[i].lat - step.poses[i + 1].lat) +
-                      abs(step.poses[i].lon - step.poses[i + 1].lon);
-    }
-
-    // Compute the distance to be truncated.
-    const auto truncated_dist = total_dist * ratio;
-
-    // Iterate through the poses for the target distance.
-    auto accumulated_dist = 0.0;
-    for (auto i = 0; i < step.poses.size() - 1; i++) {
-        auto dist = abs(step.poses[i].lat - step.poses[i + 1].lat) +
-                    abs(step.poses[i].lon - step.poses[i + 1].lon);
-
-        if (accumulated_dist + dist > truncated_dist) {
-            auto subratio = (truncated_dist - accumulated_dist) / dist;
-
-            assert(subratio >= 0 && subratio < 1 &&
-                   "Ratio in truncate_step_by_time() must be within [0, 1)!");
-
-            step.poses[i].lon =
-                step.poses[i].lon + subratio * (step.poses[i + 1].lon - step.poses[i].lon);
-            step.poses[i].lat =
-                step.poses[i].lat + subratio * (step.poses[i + 1].lat - step.poses[i].lat);
-
-            step.poses.erase(step.poses.begin(), step.poses.begin() + i);
-
-            break;
-        }
-
-        accumulated_dist += dist;
-    }
-
+    // When the vehicle is travelling on the link from step.poses[0] to step.poses[1],
+    // it can be treated as it were at point B to do route planning, considering the time left to arrive step.poses[1]
+    step.poses[0].node_id = step.poses[1].node_id;
+    step.poses[0].lon = step.poses[0].lon + ratio * (step.poses[1].lon - step.poses[0].lon);
+    step.poses[0].lat = step.poses[0].lat + ratio * (step.poses[1].lat - step.poses[0].lat);
     step.distance_mm *= (1 - ratio);
     step.duration_ms *= (1 - ratio);
 
-    assert(step.poses.size() >= 2 &&
-           "Output step in truncate_step_by_time() must have at least 2 poses!");
+    assert(step.poses.size() == 2 &&
+           "Output step in truncate_step_by_time() should have 2 poses!");
     assert(step.distance_mm > 0 &&
            "Output step's distance in truncate_step_by_time() must be positive!");
     assert(step.duration_ms > 0 &&
@@ -68,8 +42,8 @@ void truncate_step_by_time(Step &step, uint64_t time_ms) {
 }
 
 void truncate_leg_by_time(Leg &leg, uint64_t time_ms) {
-    assert(leg.steps.size() >= 1 &&
-           "Input leg in truncate_leg_by_time() must have at least 1 step!");
+    assert(leg.steps.size() >= 2 &&
+           "Input leg in truncate_leg_by_time() must have at least 2 step!");
     assert(leg.distance_mm > 0 &&
            "Input leg's distance in truncate_leg_by_time() must be positive!");
     assert(leg.duration_ms > 0 &&
@@ -83,15 +57,28 @@ void truncate_leg_by_time(Leg &leg, uint64_t time_ms) {
         return;
     }
 
+    fmt::print("leg.dist {}, dura {}, time_ms{}\n", leg.distance_mm, leg.duration_ms, time_ms);
+    fmt::print("leg.steps.size {}\n", leg.steps.size());
+    auto & steps1 = leg.steps;
+    for (int i = 0; i< steps1.size(); i++) {
+        fmt::print("[DEBUG] printing step {} ({} poses), t = {}s, d = {}m\n",
+                   i+1, steps1[i].poses.size(), (float)steps1[i].duration_ms/1000, (float)steps1[i].distance_mm/1000);
+        auto & poses = steps1[i].poses;
+        assert (poses.size() == 2);
+        fmt::print("      printing pos {} ({}, {}) \n", poses[0].node_id, poses[0].lon, poses[0].lat);
+        fmt::print("      printing pos {} ({}, {}) \n", poses[1].node_id, poses[1].lon, poses[1].lat);
+    }
+
     for (auto i = 0; i < leg.steps.size(); i++) {
         auto &step = leg.steps[i];
-
+        fmt::print("1({}) step.dist {}, dura {}, time_ms{}\n", i, step.distance_mm, step.duration_ms, time_ms);
         // If we can finish this step within the time, remove the entire step.
         if (step.duration_ms <= time_ms) {
             time_ms -= step.duration_ms;
             continue;
         }
-
+        // If we can not finish this step, truncate the step.
+        fmt::print("2({}) step.dist {}, dura {}, time_ms{}\n",i, step.distance_mm, step.duration_ms, time_ms);
         truncate_step_by_time(step, time_ms);
         leg.steps.erase(leg.steps.begin(), leg.steps.begin() + i);
 
@@ -106,8 +93,8 @@ void truncate_leg_by_time(Leg &leg, uint64_t time_ms) {
         leg.duration_ms += step.duration_ms;
     }
 
-    assert(leg.steps.size() >= 1 &&
-           "Output leg in truncate_leg_by_time() must have at least 1 step!");
+    assert(leg.steps.size() >= 2 &&
+           "Output leg in truncate_leg_by_time() must have at least 2 step!");
     assert(leg.distance_mm > 0 &&
            "Output leg's distance in truncate_leg_by_time() must be positive!");
     assert(leg.duration_ms > 0 &&
@@ -115,7 +102,7 @@ void truncate_leg_by_time(Leg &leg, uint64_t time_ms) {
 }
 
 void truncate_route_by_time(Route &route, uint64_t time_ms) {
-    assert(route.legs.size() >= 1 &&
+    assert(route.legs.size() == 1 &&
            "Input route in truncate_route_by_time() must have at least 1 leg!");
     assert(route.distance_mm > 0 &&
            "Input route's distance in truncate_route_by_time() must be positive!");
@@ -133,12 +120,12 @@ void truncate_route_by_time(Route &route, uint64_t time_ms) {
     for (auto i = 0; i < route.legs.size(); i++) {
         auto &leg = route.legs[i];
 
-        // If we can finish this step within the time, remove the entire step.
+        // If we can finish this leg within the time, remove the entire leg.
         if (leg.duration_ms <= time_ms) {
             time_ms -= leg.duration_ms;
             continue;
         }
-
+        // If we can not finish this leg, truncate the leg.
         truncate_leg_by_time(leg, time_ms);
         route.legs.erase(route.legs.begin(), route.legs.begin() + i);
 
@@ -153,12 +140,12 @@ void truncate_route_by_time(Route &route, uint64_t time_ms) {
         route.duration_ms += leg.duration_ms;
     }
 
-//    assert(route.legs.size() >= 1 &&
-//           "Output route in truncate_route_by_time() must have at least 1 step!");
-//    assert(route.distance_mm > 0 &&
-//           "Output route's distance in truncate_route_by_time() must be positive!");
-//    assert(route.duration_ms > 0 &&
-//           "Output route's duration in truncate_route_by_time() must be positive!");
+    assert(route.legs.size() == 1 &&
+           "Output route in truncate_route_by_time() must have at least 1 step!");
+    assert(route.distance_mm > 0 &&
+           "Output route's distance in truncate_route_by_time() must be positive!");
+    assert(route.duration_ms > 0 &&
+           "Output route's duration in truncate_route_by_time() must be positive!");
 }
 
 void advance_vehicle(Vehicle &vehicle,
@@ -227,6 +214,12 @@ void advance_vehicle(Vehicle &vehicle,
         }
 
         vehicle.schedule.erase(vehicle.schedule.begin(), vehicle.schedule.begin() + i);
+
+        auto first_step_of_route = vehicle.schedule[0].route.legs[0].steps[0];
+        if (first_step_of_route.poses[0].node_id == first_step_of_route.poses[1].node_id) {
+            assert (first_step_of_route.duration_ms != 0);
+            vehicle.step_to_pos = first_step_of_route;
+        }
 
         return;
     }

@@ -1,7 +1,8 @@
 //
 // Created by Leot on 2021/3/30.
 //
-
+#undef NDEBUG
+#include <assert.h>
 #include "config.hpp"
 #include "types.hpp"
 #include "utility.hpp"
@@ -37,11 +38,20 @@ int main(int argc, const char *argv[]) {
     float b = 3.2;
     a = b * 100;
     std::cout<<"a的类型是"<<typeid(a).name()<< a <<std::endl;
+    assert(a > 10 && "a<=10");
 
     std::cout<<"b "<<b<<std::endl;
     b = test(a);
     std::cout<<"a "<<a<<std::endl;
     std::cout<<"b "<<b<<std::endl;
+
+    std::vector<int> ss = {1, 2, 3, 4};
+
+    auto dd = ss;
+
+    ss[2] = 100;
+    std::cout << "ss[2] " << ss[2] << std::endl;
+    std::cout << "dd[2] " << dd[2] << std::endl;
 
 
 //    PreprocessRequestDate("../datalog-gitignore/taxi-data/manhattan-taxi-20160525");
