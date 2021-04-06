@@ -16,16 +16,16 @@ area_config:
   lat_max: 40.8825
 mod_system_config:
   fleet_config:
-    fleet_size: 200
+    fleet_size: 5
     veh_capacity: 4
   request_config:
     request_density: 0.1
     max_pickup_wait_time_s: 600
 simulation_config:
   simulation_start_time: "2016-05-25 00:00:00"
-  cycle_s: 20
+  cycle_s: 30
   warmup_duration_s: 0
-  simulation_duration_s: 1800
+  simulation_duration_s: 180
   winddown_duration_s: 0
 output_config:
   datalog_config:
@@ -34,5 +34,5 @@ output_config:
   video_config:
     render_video: true
     path_to_output_video: "/media-gitignore/demo.mp4"
-    frames_per_cycle: 2  # total frames = simulation_duration_s / (cycle_s / frames_per_cycle)
-    replay_speed: 100  # fps = replay_speed / (cycle_s / frames_per_cycle)
+    frames_per_cycle: 3  # total frames = simulation_duration_s / (cycle_s / frames_per_cycle)
+    replay_speed: 200  # fps = replay_speed / (cycle_s / frames_per_cycle)

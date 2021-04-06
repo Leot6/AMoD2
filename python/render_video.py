@@ -7,6 +7,7 @@ from PIL import Image
 import sys
 import os
 import yaml
+import time
 
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -69,6 +70,7 @@ def get_color(id):
 
 
 def main():
+    stime = time.time()
     # # Check command line arguments.
     # if (len(sys.argv) != 3):
     #     print("[ERROR] We need exact 2 arguments aside from the program name for correct execution! \n"
@@ -261,7 +263,7 @@ def main():
             artist='mod-abm-2.0'), bitrate=1800)
         anime.save(path_to_output_video, writer=writer)
 
-        print("Video saved at {}. Duration={}, FPS={}, DPI={}.".format(
+        print("[INFO] ({}s) Video saved at {}. Duration={}, FPS={}, DPI={}.".format(round(time.time()-stime, 2),
             path_to_output_video, viedo_duration, fps, DPI))
 
 
