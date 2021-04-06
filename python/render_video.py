@@ -97,7 +97,7 @@ def main():
         lon_min, lon_max, lat_min, lat_max))
 
     # Load background image.
-    map_image_file_path = root_path + "/media/manhattan.png"
+    map_image_file_path = root_path + "/media-gitignore/manhattan.png"
     img = Image.open(map_image_file_path)
     w, h = img.size
 
@@ -110,7 +110,7 @@ def main():
                         / config["output_config"]["video_config"]["frames_per_cycle"]
     num_vehs = config["mod_system_config"]["fleet_config"]["fleet_size"]
 
-    path_to_datalog = config["output_config"]["datalog_config"]["path_to_output_datalog"]
+    path_to_datalog = root_path + config["output_config"]["datalog_config"]["path_to_output_datalog"]
     fps = 1000 / frame_interval_ms * \
           config["output_config"]["video_config"]["replay_speed"]
     viedo_duration = num_frames / fps
@@ -255,7 +255,7 @@ def main():
             fig, animate, init_func=init, frames=num_frames)
 
         # Set up formatting for the movie file and write.
-        path_to_output_video = config["output_config"]["video_config"]["path_to_output_video"]
+        path_to_output_video = root_path + config["output_config"]["video_config"]["path_to_output_video"]
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=fps, metadata=dict(
             artist='mod-abm-2.0'), bitrate=1800)

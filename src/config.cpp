@@ -57,12 +57,12 @@ PlatformConfig load_platform_config(const std::string &path_to_platform_config, 
 
     platform_config.output_config.datalog_config.output_datalog =
             platform_config_yaml["output_config"]["datalog_config"]["output_datalog"].as<bool>();
-    platform_config.output_config.datalog_config.path_to_output_datalog =
+    platform_config.output_config.datalog_config.path_to_output_datalog = root_directory +
             platform_config_yaml["output_config"]["datalog_config"]["path_to_output_datalog"]
                     .as<std::string>();
     platform_config.output_config.video_config.render_video =
             platform_config_yaml["output_config"]["video_config"]["render_video"].as<bool>();
-    platform_config.output_config.video_config.path_to_output_video =
+    platform_config.output_config.video_config.path_to_output_video = root_directory +
             platform_config_yaml["output_config"]["video_config"]["path_to_output_video"]
                     .as<std::string>();
     platform_config.output_config.video_config.frames_per_cycle =

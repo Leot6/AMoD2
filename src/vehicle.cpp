@@ -4,15 +4,19 @@
 #include "vehicle.hpp"
 
 #include <fmt/format.h>
+
 #undef NDEBUG
+
 #include <assert.h>
 
 void truncate_step_by_time(Step &step, uint64_t time_ms) {
+//    fmt::print("Input step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
+//    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
+//               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
+//               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
+
     assert(step.poses.size() == 2 &&
            "Input step in truncate_step_by_time() should have 2 poses!");
-    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
-               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
-               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
     assert(step.distance_mm > 0 &&
            "Input step's distance in truncate_step_by_time() must be positive!");
     assert(step.duration_ms > 0 &&
@@ -31,7 +35,12 @@ void truncate_step_by_time(Step &step, uint64_t time_ms) {
     step.poses[0].lon = step.poses[0].lon + ratio * (step.poses[1].lon - step.poses[0].lon);
     step.poses[0].lat = step.poses[0].lat + ratio * (step.poses[1].lat - step.poses[0].lat);
     step.distance_mm *= (1 - ratio);
-    step.duration_ms *= (1 - ratio);
+    step.duration_ms -= time_ms;  // we do not use "*= (1 - ratio)" to avoid bug cases, e.g. "11119 / 11120 = 1.0"
+
+//    fmt::print("Output step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
+//    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
+//               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
+//               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
 
     assert(step.poses.size() == 2 &&
            "Output step in truncate_step_by_time() should have 2 poses!");
@@ -57,28 +66,28 @@ void truncate_leg_by_time(Leg &leg, uint64_t time_ms) {
         return;
     }
 
-    fmt::print("leg.dist {}, dura {}, time_ms{}\n", leg.distance_mm, leg.duration_ms, time_ms);
-    fmt::print("leg.steps.size {}\n", leg.steps.size());
-    auto & steps1 = leg.steps;
-    for (int i = 0; i< steps1.size(); i++) {
-        fmt::print("[DEBUG] printing step {} ({} poses), t = {}s, d = {}m\n",
-                   i+1, steps1[i].poses.size(), (float)steps1[i].duration_ms/1000, (float)steps1[i].distance_mm/1000);
-        auto & poses = steps1[i].poses;
-        assert (poses.size() == 2);
-        fmt::print("      printing pos {} ({}, {}) \n", poses[0].node_id, poses[0].lon, poses[0].lat);
-        fmt::print("      printing pos {} ({}, {}) \n", poses[1].node_id, poses[1].lon, poses[1].lat);
-    }
+//    fmt::print("leg.dist {}, dura {}, time_ms{}\n", leg.distance_mm, leg.duration_ms, time_ms);
+//    fmt::print("leg.steps.size {}\n", leg.steps.size());
+//    auto & steps1 = leg.steps;
+//    for (int i = 0; i< steps1.size(); i++) {
+//        fmt::print("[DEBUG] printing step {} ({} poses), t = {}s, d = {}m\n",
+//                   i+1, steps1[i].poses.size(), (float)steps1[i].duration_ms/1000, (float)steps1[i].distance_mm/1000);
+//        auto & poses = steps1[i].poses;
+//        assert (poses.size() == 2);
+//        fmt::print("      printing pos {} ({}, {}) \n", poses[0].node_id, poses[0].lon, poses[0].lat);
+//        fmt::print("      printing pos {} ({}, {}) \n", poses[1].node_id, poses[1].lon, poses[1].lat);
+//    }
 
     for (auto i = 0; i < leg.steps.size(); i++) {
         auto &step = leg.steps[i];
-        fmt::print("1({}) step.dist {}, dura {}, time_ms{}\n", i, step.distance_mm, step.duration_ms, time_ms);
+//        fmt::print("1({}) step.dist {}, dura {}, time_ms{}\n", i, step.distance_mm, step.duration_ms, time_ms);
         // If we can finish this step within the time, remove the entire step.
         if (step.duration_ms <= time_ms) {
             time_ms -= step.duration_ms;
             continue;
         }
         // If we can not finish this step, truncate the step.
-        fmt::print("2({}) step.dist {}, dura {}, time_ms{}\n",i, step.distance_mm, step.duration_ms, time_ms);
+//        fmt::print("2({}) step.dist {}, dura {}, time_ms{}\n",i, step.distance_mm, step.duration_ms, time_ms);
         truncate_step_by_time(step, time_ms);
         leg.steps.erase(leg.steps.begin(), leg.steps.begin() + i);
 
@@ -102,6 +111,21 @@ void truncate_leg_by_time(Leg &leg, uint64_t time_ms) {
 }
 
 void truncate_route_by_time(Route &route, uint64_t time_ms) {
+//    fmt::print("Input route, t={}, d={}, time_ms={}\n", route.duration_ms, route.distance_mm, time_ms);
+//    auto & leg = route.legs[0];
+//    fmt::print("leg.dist {}, dura {}, time_ms{}\n", leg.distance_mm, leg.duration_ms, time_ms);
+//    fmt::print("leg.steps.size {}\n", leg.steps.size());
+//    auto &steps1 = leg.steps;
+//    for (int i = 0; i < steps1.size(); i++) {
+//        fmt::print("[DEBUG] printing step {} ({} poses), t = {}s, d = {}m\n",
+//                   i + 1, steps1[i].poses.size(), (float) steps1[i].duration_ms / 1000,
+//                   (float) steps1[i].distance_mm / 1000);
+//        auto &poses = steps1[i].poses;
+//        assert (poses.size() == 2);
+//        fmt::print("      printing pos {} ({}, {}) \n", poses[0].node_id, poses[0].lon, poses[0].lat);
+//        fmt::print("      printing pos {} ({}, {}) \n", poses[1].node_id, poses[1].lon, poses[1].lat);
+//    }
+
     assert(route.legs.size() == 1 &&
            "Input route in truncate_route_by_time() must have at least 1 leg!");
     assert(route.distance_mm > 0 &&
@@ -157,6 +181,9 @@ void advance_vehicle(Vehicle &vehicle,
     if (time_ms == 0) {
         return;
     }
+
+    Step empty_step;
+    vehicle.step_to_pos = empty_step;
 
     for (auto i = 0; i < vehicle.schedule.size(); i++) {
         auto &wp = vehicle.schedule[i];
