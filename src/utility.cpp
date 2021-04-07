@@ -21,18 +21,18 @@ int32_t ComputeTheAccumulatedSecondsFrom0Clock(std::string time_date) {
   return accumulated_sec;
 }
 
-//std::string ConvertTimeSecondToDate(int32_t time_sec) {
-//    int32_t time_test = time_sec;
-//    time_t time_sec2;
-//    tm tm_time2;
-//    tm_time2.tm_isdst = -1;
-//    char time_date2[128]= {0};
-//    time_sec2 = time_test;
-//    tm_time2 = *localtime(&time_sec2);
-//    strftime(time_date2, 64, "%Y-%m-%d %H:%M:%S", &tm_time2);
-//    std::string converted_time_date = time_date2;
-//    return converted_time_date;
-//}
+std::string ConvertTimeSecondToDate(int32_t time_sec) {
+    int32_t time_test = time_sec;
+    time_t time_sec2;
+    tm tm_time2;
+    tm_time2.tm_isdst = -1;
+    char time_date2[128]= {0};
+    time_sec2 = time_test;
+    tm_time2 = *localtime(&time_sec2);
+    strftime(time_date2, 64, "%Y-%m-%d %H:%M:%S", &tm_time2);
+    std::string converted_time_date = time_date2;
+    return converted_time_date;
+}
 
 std::time_t getTimeStamp() {
     std::chrono::time_point<std::chrono::system_clock,std::chrono::milliseconds> tp =

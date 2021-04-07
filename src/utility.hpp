@@ -21,8 +21,8 @@
 /// \brief A function converting "%Y-%m-%d %H:%M:%S" to seconds.
 int32_t ConvertTimeDateToSeconds(std::string time_date);
 
-///// \brief A function converting seconds to "%Y-%m-%d %H:%M:%S".
-//std::string ConvertTimeSecondToDate(int32_t time_sec);
+/// \brief A function converting seconds to "%Y-%m-%d %H:%M:%S".
+std::string ConvertTimeSecondToDate(int32_t time_sec);
 
 /// \brief A function computing the accumulated seconds of the day from "%Y-%m-%d %H:%M:%S",
 /// e.g. "2015-05-25 01:00:00" -> 3600

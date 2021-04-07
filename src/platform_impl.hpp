@@ -70,8 +70,9 @@ Platform<RouterFunc, DemandGeneratorFunc>::~Platform() {
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation() {
-    fmt::print("[INFO] Simulation started. Running for total {} seconds.\n",
-               system_shutdown_time_ms_ / 1000.0);
+//    fmt::print("[INFO] Simulation started. Running for total {} seconds.\n",
+//               system_shutdown_time_ms_ / 1000.0);
+    create_report(0.0);
     auto start = std::chrono::system_clock::now();
 
     // Run simulation cycle by cycle.
@@ -270,24 +271,48 @@ void Platform<RouterFunc, DemandGeneratorFunc>::write_to_datalog() {
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::create_report(double total_runtime_s) {
-    fmt::print("-----------------------------------------------------------------------------------"
-               "-----------------------------\n");
+    std::string dividing_line = "*******************************************************************************";
+    fmt::print("{}\n", dividing_line);
+
+    auto sim_start_time_date = platform_config_.simulation_config.simulation_start_time;
+    auto sim_end_time_date = ConvertTimeSecondToDate(
+            ConvertTimeDateToSeconds(sim_start_time_date) + system_shutdown_time_ms_ / 1000);
+    auto main_sim_start_date = ConvertTimeSecondToDate(
+            ConvertTimeDateToSeconds(sim_start_time_date) + main_sim_start_time_ms_ / 1000);
+    auto main_sim_end_date = ConvertTimeSecondToDate(
+            ConvertTimeDateToSeconds(sim_start_time_date) + main_sim_end_time_ms_ / 1000);
+    auto video_sim_seconds_per_frame = cycle_ms_ / 1000 / platform_config_.output_config.video_config.frames_per_cycle;
+    auto video_frames =  platform_config_.simulation_config.simulation_duration_s / video_sim_seconds_per_frame;
+    auto video_fps = platform_config_.output_config.video_config.replay_speed / video_sim_seconds_per_frame;
+    auto video_duration = video_frames / video_fps;
+
 
     // Report the platform configurations
     fmt::print("# System Configurations\n");
-    fmt::print(
-        " - Simulation Config: simulation_duration = {}s (main simulation between {}s and {}s).\n",
-        system_shutdown_time_ms_ / 1000.0,
-        main_sim_start_time_ms_ / 1000.0,
-        main_sim_end_time_ms_ / 1000.0);
-    fmt::print(" - Fleet Config: fleet_size = {}, vehicle_capacity = {}.\n",
+    fmt::print("  - From {} to {} (main simulation between {} and {})\n",
+               sim_start_time_date.substr(11,20), sim_end_time_date.substr(11,20),
+               main_sim_start_date.substr(11,20), main_sim_end_date.substr(11,20));
+    fmt::print("  - Fleet Config: size = {}, capacity = {} (interval = {}s)\n",
                platform_config_.mod_system_config.fleet_config.fleet_size,
-               platform_config_.mod_system_config.fleet_config.veh_capacity);
-    fmt::print(" - Request Config: max_wait_time = {}s.\n",
-               platform_config_.mod_system_config.request_config.max_pickup_wait_time_s);
-    fmt::print(" - Output Config: output_datalog = {}, render_video = {}.\n",
+               platform_config_.mod_system_config.fleet_config.veh_capacity, cycle_ms_ / 1000);
+    fmt::print("  - Order Config: density = {}, max_wait = {}s ({}+{}+{}={} epochs)\n",
+               platform_config_.mod_system_config.request_config.request_density,
+               platform_config_.mod_system_config.request_config.max_pickup_wait_time_s,
+               platform_config_.simulation_config.warmup_duration_s / (cycle_ms_ / 1000),
+               platform_config_.simulation_config.simulation_duration_s / (cycle_ms_ / 1000),
+               platform_config_.simulation_config.winddown_duration_s / (cycle_ms_ / 1000),
+               system_shutdown_time_ms_ / cycle_ms_);
+    fmt::print("  - Dispatch Config: dispatcher = {}, rebalancer = {}.\n", "GI", "NR");
+    fmt::print("  - Output Config: datalog = {}, video = {} (fps = {} and duration = {}s)\n",
                platform_config_.output_config.datalog_config.output_datalog,
-               platform_config_.output_config.video_config.render_video);
+               platform_config_.output_config.video_config.render_video,
+               video_fps, video_duration);
+
+    if (orders_.size() == 0) {
+        fmt::print("{}\n", dividing_line);
+        exit(0);
+        return;
+    }
 
     // Simulation Runtime
     fmt::print("# Simulation Runtime\n");
@@ -359,7 +384,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(double total_runti
     fmt::print(" - Load: average_load = {}.\n",
                total_loaded_dist_traveled_mm * 1.0 / total_dist_traveled_mm);
 
-    fmt::print("-----------------------------------------------------------------------------------"
-               "-----------------------------\n");
+    fmt::print("{}\n", dividing_line);
     return;
 }

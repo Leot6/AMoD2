@@ -28,6 +28,7 @@ void advance_vehicle(Vehicle &vehicle,
                      uint64_t time_ms,
                      bool update_vehicle_stats = true);
 
+/// \brief Build the detailed route for a vehicle based on its assigned schedule.
 template <typename RouterFunc>
 void build_route_for_a_vehicle_schedule(Vehicle &vehicle, RouterFunc &router_func) {
     auto pos = vehicle.pos;
@@ -35,7 +36,7 @@ void build_route_for_a_vehicle_schedule(Vehicle &vehicle, RouterFunc &router_fun
         auto &wp = vehicle.schedule[i];
         auto route_response = router_func(pos, wp.pos, RoutingType::FULL_ROUTE);
 
-        // make sure that routing is not wrong
+        // check the accuracy of routing
         int deviation_due_to_data_structure = 5;
         assert(abs(wp.route.duration_ms - route_response.route.duration_ms) <= deviation_due_to_data_structure);
         assert(abs(wp.route.distance_mm - route_response.route.distance_mm) <= deviation_due_to_data_structure);

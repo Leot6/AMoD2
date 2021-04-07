@@ -10,10 +10,10 @@
 #include <assert.h>
 
 void truncate_step_by_time(Step &step, uint64_t time_ms) {
-//    fmt::print("Input step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
-//    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
-//               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
-//               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
+    fmt::print("Input step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
+    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
+               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
+               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
 
     assert(step.poses.size() == 2 &&
            "Input step in truncate_step_by_time() should have 2 poses!");
@@ -37,14 +37,15 @@ void truncate_step_by_time(Step &step, uint64_t time_ms) {
     step.distance_mm *= (1 - ratio);
     step.duration_ms -= time_ms;  // we do not use "*= (1 - ratio)" to avoid bug cases, e.g. "11119 / 11120 = 1.0"
 
-//    fmt::print("Output step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
-//    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
-//               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
-//               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
+    fmt::print("Output step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
+    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
+               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
+               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
 
     assert(step.poses.size() == 2 &&
            "Output step in truncate_step_by_time() should have 2 poses!");
-    assert(step.distance_mm > 0 &&
+    // sometimes the distance_ms could be less than 1, e.g. 370 * (1-4990/5000) = 0.74
+    assert(step.distance_mm >= 0 &&
            "Output step's distance in truncate_step_by_time() must be positive!");
     assert(step.duration_ms > 0 &&
            "Output step's duration in truncate_step_by_time() must be positive!");
