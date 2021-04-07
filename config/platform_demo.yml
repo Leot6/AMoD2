@@ -19,14 +19,14 @@ mod_system_config:
     fleet_size: 3000
     veh_capacity: 4
   request_config:
-    request_density: 0.2
+    request_density: 1
     max_pickup_wait_time_s: 600
 simulation_config:
   simulation_start_time: "2016-05-25 00:00:00"
   cycle_s: 30
-  warmup_duration_s: 1800
-  simulation_duration_s: 3600
-  winddown_duration_s: 3000
+  warmup_duration_min: 30  # 30min
+  simulation_duration_min: 60  # <= 1371min
+  winddown_duration_min: 39  # 39min
 output_config:
   datalog_config:
     output_datalog: false
@@ -34,5 +34,6 @@ output_config:
   video_config:
     render_video: false
     path_to_output_video: "/media-gitignore/demo.mp4"
-    frames_per_cycle: 1  # total frames = simulation_duration_s / (cycle_s / frames_per_cycle)
-    replay_speed: 600  # fps = replay_speed / (cycle_s / frames_per_cycle)
+    frames_per_cycle: 3  # simulation_seconds_per_frame = cycle_s / frames_per_cycle
+    # total frames = simulation_duration_min * 60 / simulation_seconds_per_frame
+    replay_speed: 600  # fps = replay_speed / simulation_seconds_per_frame

@@ -46,9 +46,9 @@ struct MoDSystemConfig {
 struct SimulationConfig {
     std::string simulation_start_time = ""; // the time of the day that simulation starts
     double cycle_s = 60; // the cycle every x second the platform dispatches the requests in batch
-    double simulation_duration_s =
-        600; // the main period during which the simulated data is used for analysis
     double warmup_duration_s = 1200;   // the period before the main sim to build up states
+    double simulation_duration_s =
+            1800; // the main period during which the simulated data is used for analysis
     double winddown_duration_s = 1200; // the period after the main sim to close trips
 };
 

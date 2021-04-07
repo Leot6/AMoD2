@@ -48,12 +48,12 @@ PlatformConfig load_platform_config(const std::string &path_to_platform_config, 
             platform_config_yaml["simulation_config"]["simulation_start_time"].as<std::string>();
     platform_config.simulation_config.cycle_s =
             platform_config_yaml["simulation_config"]["cycle_s"].as<double>();
-    platform_config.simulation_config.simulation_duration_s =
-            platform_config_yaml["simulation_config"]["simulation_duration_s"].as<double>();
-    platform_config.simulation_config.warmup_duration_s =
-            platform_config_yaml["simulation_config"]["warmup_duration_s"].as<double>();
-    platform_config.simulation_config.winddown_duration_s =
-            platform_config_yaml["simulation_config"]["winddown_duration_s"].as<double>();
+    platform_config.simulation_config.warmup_duration_s = 60 *
+            platform_config_yaml["simulation_config"]["warmup_duration_min"].as<double>();
+    platform_config.simulation_config.simulation_duration_s = 60 *
+            platform_config_yaml["simulation_config"]["simulation_duration_min"].as<double>();
+    platform_config.simulation_config.winddown_duration_s = 60 *
+            platform_config_yaml["simulation_config"]["winddown_duration_min"].as<double>();
 
     platform_config.output_config.datalog_config.output_datalog =
             platform_config_yaml["output_config"]["datalog_config"]["output_datalog"].as<bool>();

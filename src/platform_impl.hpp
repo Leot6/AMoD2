@@ -27,8 +27,8 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         vehicle.pos = router_func_.getNodePos(router_func_.getVehicleStationId(station_idx));
         vehicles_.emplace_back(vehicle);
     }
-    fmt::print("[INFO] ({}s) Generated {} vehicles.\n",
-               float (getTimeStamp() - s_time)/1000,vehicles_.size());
+//    fmt::print("[DEBUG] ({}s) Generated {} vehicles.\n",
+//               float (getTimeStamp() - s_time)/1000,vehicles_.size());
 
     // Initialize the simulation times.
     system_time_ms_ = 0;
@@ -57,7 +57,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         fmt::print("[INFO] Opened the output datalog file at {}.\n",
                    datalog_config.path_to_output_datalog);
     }
-    fmt::print("[INFO] # Platform is ready. #\n");
+    fmt::print("[INFO] Platform is ready.\n");
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>

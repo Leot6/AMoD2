@@ -19,9 +19,9 @@ DemandGenerator::DemandGenerator(std::string _path_to_taxi_data, std::string _si
         init_request_idx_ += 1;
     }
     request_density_ = _request_density;
-    fmt::print("[INFO] ({}s) Calculate the initial request index {} ({}).\n",
-               float (getTimeStamp() - s_time)/1000, init_request_idx_, _simulation_start_time);
-    fmt::print("[INFO] # Demand Generator is ready. #\n");
+//    fmt::print("[DEBUG] ({}s) Calculate the initial request index {} ({}).\n",
+//               float (getTimeStamp() - s_time)/1000, init_request_idx_, _simulation_start_time);
+    fmt::print("[INFO] Demand Generator is ready.\n");
 }
 
 std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms) {
@@ -66,7 +66,7 @@ std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv) {
         auto request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request_time_date) * 1000;
         all_requests.emplace_back(onid,dnid,request_time_ms, request_time_date);
     }
-    fmt::print("[INFO] ({}s) Load request data from {}, with {} requests.\n",
-               float (getTimeStamp() - s_time)/1000, path_to_csv, all_requests.size());
+//    fmt::print("[DEBUG] ({}s) Load request data from {}, with {} requests.\n",
+//               float (getTimeStamp() - s_time)/1000, path_to_csv, all_requests.size());
     return std::move(all_requests);
 }
