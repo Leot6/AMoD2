@@ -17,7 +17,7 @@ void assign_orders_through_insertion_heuristics(const std::vector<size_t> &pendi
                                                std::vector<Vehicle> &vehicles,
                                                uint64_t system_time_ms,
                                                RouterFunc &router_func) {
-    fmt::print("[DEBUG] Assigning orders to vehicles through insertion heuristics.\n");
+//    fmt::print("[DEBUG] Assigning orders to vehicles through insertion heuristics.\n");
 
     // For each order, we assign it to the best vehicle.
     for (auto order_id : pending_order_ids) {
@@ -50,7 +50,7 @@ void assign_order_through_insertion_heuristics(Order &order,
     // If none of the vehicles can serve the order, return false.
     if (!res.success) {
         order.status = OrderStatus::WALKAWAY;
-        fmt::print("[DEBUG] Failed to assign Order #{}.\n", order.id);
+//        fmt::print("[DEBUG] Failed to assign Order #{}.\n", order.id);
 
         return;
     }
@@ -59,10 +59,10 @@ void assign_order_through_insertion_heuristics(Order &order,
     auto &best_vehicle = vehicles[res.vehicle_id];
     insert_order_to_vehicle(order, best_vehicle, res.pickup_index, res.dropoff_index, router_func);
 
-    fmt::print("[DEBUG] Assigned Order #{} to Vehicle #{}, the schedule of which consists of {} waypoints.\n",
-               order.id,
-               best_vehicle.id,
-               best_vehicle.schedule.size());
+//    fmt::print("[DEBUG] Assigned Order #{} to Vehicle #{}, the schedule of which consists of {} waypoints.\n",
+//               order.id,
+//               best_vehicle.id,
+//               best_vehicle.schedule.size());
 
     return;
 }

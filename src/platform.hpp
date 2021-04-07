@@ -30,7 +30,7 @@ template <typename RouterFunc, typename DemandGeneratorFunc> class Platform {
     Platform &operator=(Platform &&other) = delete;
 
     /// \brief Run simulation. The master function that manages the entire simulation process.
-    void run_simulation();
+    void run_simulation(std::string simulation_init_time, float total_init_time_s);
 
   private:
     /// \brief Run simulation for one cycle. Invoked repetetively by run_simulation().
@@ -49,7 +49,7 @@ template <typename RouterFunc, typename DemandGeneratorFunc> class Platform {
     void write_to_datalog();
 
     /// \brief Create the report based on the statistical analysis using the simulated data.
-    void create_report(double total_runtime_s);
+    void create_report(std::string simulation_init_time, float total_init_time_s, float total_runtime_s);
 
     /// \brief The set of config parameters for the simulation platform.
     PlatformConfig platform_config_;

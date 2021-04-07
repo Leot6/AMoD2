@@ -5,6 +5,8 @@
 
 #include "dispatch.hpp"
 #include "platform.hpp"
+#include "progressbar.hpp"
+#include "tqdm.h"
 
 #include <fmt/format.h>
 
@@ -55,7 +57,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         fmt::print("[INFO] Opened the output datalog file at {}.\n",
                    datalog_config.path_to_output_datalog);
     }
-    fmt::print("[INFO] Platform is ready.\n");
+    fmt::print("[INFO] # Platform is ready. #\n");
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
@@ -69,30 +71,42 @@ Platform<RouterFunc, DemandGeneratorFunc>::~Platform() {
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation() {
-//    fmt::print("[INFO] Simulation started. Running for total {} seconds.\n",
-//               system_shutdown_time_ms_ / 1000.0);
-    create_report(0.0);
-    auto start = std::chrono::system_clock::now();
+void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation(std::string simulation_init_time,
+                                                               float total_init_time_s) {
+    create_report(simulation_init_time, total_init_time_s, 0.0);
+    auto s_time = getTimeStamp();
 
     // Run simulation cycle by cycle.
+
+    progressbar bar(system_shutdown_time_ms_ / cycle_ms_);
+    fmt::print("(Δt={}s)", cycle_ms_ / 1000);
     while (system_time_ms_ < system_shutdown_time_ms_) {
+        bar.update();
         run_cycle();
     }
 
+
+//    tqdm bar1;
+//    int i = 0;
+//    while (system_time_ms_ < system_shutdown_time_ms_) {
+//        bar1.progress(i, system_shutdown_time_ms_ / cycle_ms_);
+//        i += 1;
+//        run_cycle();
+//    }
+//    bar1.finish();
+
     // Create report.
-    std::chrono::duration<double> runtime = std::chrono::system_clock::now() - start;
-    fmt::print("[INFO] Simulation completed. Creating report.\n");
-    create_report(runtime.count());
+    fmt::print("\n[INFO] Simulation completed. Creating report.\n");
+    create_report(simulation_init_time, total_init_time_s, float (getTimeStamp() - s_time) / 1000);
 
     return;
 };
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::run_cycle() {
-    fmt::print("[INFO] T = {}s: Cycle {} is running.\n",
-               system_time_ms_ / 1000.0,
-               system_time_ms_ / cycle_ms_);
+//    fmt::print("[INFO] T = {}s: Cycle {} is running.\n",
+//               system_time_ms_ / 1000.0,
+//               system_time_ms_ / cycle_ms_);
 
     // Advance the vehicles frame by frame in main simulation.
     if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
@@ -132,15 +146,15 @@ void Platform<RouterFunc, DemandGeneratorFunc>::advance_vehicles(uint64_t time_m
                         orders_,
                         system_time_ms_,
                         time_ms,
-                        system_time_ms_ >= main_sim_start_time_ms_ &&
-                            system_time_ms_ < main_sim_end_time_ms_);
+                        (system_time_ms_ >= main_sim_start_time_ms_ &&
+                            system_time_ms_ < main_sim_end_time_ms_));
     }
 
     // Increment the system time.
     system_time_ms_ += time_ms;
 
-    fmt::print(
-        "[DEBUG] T = {}s: Advanced vehicles by {}s.\n", system_time_ms_ / 1000.0, time_ms / 1000.0);
+//    fmt::print(
+//        "[DEBUG] T = {}s: Advanced vehicles by {}s.\n", system_time_ms_ / 1000.0, time_ms / 1000.0);
 
     return;
 }
@@ -150,9 +164,9 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::generate_orders()
     // Get order requests generated during the past cycle.
     auto requests = demand_generator_func_(system_time_ms_);
 
-    fmt::print("[DEBUG] T = {}s: Generated {} request(s) in this cycle:\n",
-               system_time_ms_ / 1000.0,
-               requests.size());
+//    fmt::print("[DEBUG] T = {}s: Generated {} request(s) in this cycle:\n",
+//               system_time_ms_ / 1000.0,
+//               requests.size());
 
     // Add the requests into the order list as well as the pending orders.
     std::vector<size_t> pending_order_ids;
@@ -171,14 +185,14 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::generate_orders()
         pending_order_ids.emplace_back(orders_.size());
         orders_.emplace_back(std::move(order));
 
-        fmt::print("[DEBUG] Order #{} requested at {}, from origin ({}, {}) to destination "
-                   "({}, {}):\n",
-                   orders_.back().id,
-                   orders_.back().request_time_date,
-                   orders_.back().origin.lon,
-                   orders_.back().origin.lat,
-                   orders_.back().destination.lon,
-                   orders_.back().destination.lat);
+//        fmt::print("[DEBUG] Order #{} requested at {}, from origin ({}, {}) to destination "
+//                   "({}, {}):\n",
+//                   orders_.back().id,
+//                   orders_.back().request_time_date,
+//                   orders_.back().origin.lon,
+//                   orders_.back().origin.lat,
+//                   orders_.back().destination.lon,
+//                   orders_.back().destination.lat);
     }
 
     return pending_order_ids;
@@ -187,9 +201,9 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::generate_orders()
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::dispatch(
     const std::vector<size_t> &pending_order_ids) {
-    fmt::print("[DEBUG] T = {}s: Dispatching {} pending order(s) to vehicles.\n",
-               system_time_ms_ / 1000.0,
-               pending_order_ids.size());
+//    fmt::print("[DEBUG] T = {}s: Dispatching {} pending order(s) to vehicles.\n",
+//               system_time_ms_ / 1000.0,
+//               pending_order_ids.size());
 
     // Assign pending orders to vehicles.
     assign_orders_through_insertion_heuristics(
@@ -264,15 +278,23 @@ void Platform<RouterFunc, DemandGeneratorFunc>::write_to_datalog() {
 
     datalog_ofstream_ << node << std::endl << "---\n";
 
-    fmt::print("[DEBUG] T = {}s: Wrote to datalog.\n", system_time_ms_ / 1000.0);
+//    fmt::print("[DEBUG] T = {}s: Wrote to datalog.\n", system_time_ms_ / 1000.0);
 
     return;
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::create_report(double total_runtime_s) {
+void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simulation_init_time,
+                                                              float total_init_time_s, float total_runtime_s) {
     std::string dividing_line = "*******************************************************************************";
     fmt::print("{}\n", dividing_line);
+
+    std::string simulation_finish_time;
+    if (orders_.size() == 0) {
+        simulation_finish_time = "0000-00-00 00:00:00";
+    } else {
+        simulation_finish_time = ConvertTimeSecondToDate(getTimeStamp() / 1000);
+    }
 
     auto sim_start_time_date = platform_config_.simulation_config.simulation_start_time;
     auto sim_end_time_date = ConvertTimeSecondToDate(
@@ -281,11 +303,18 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(double total_runti
             ConvertTimeDateToSeconds(sim_start_time_date) + main_sim_start_time_ms_ / 1000);
     auto main_sim_end_date = ConvertTimeSecondToDate(
             ConvertTimeDateToSeconds(sim_start_time_date) + main_sim_end_time_ms_ / 1000);
+    auto num_of_epochs = system_shutdown_time_ms_ / cycle_ms_;
     auto video_sim_seconds_per_frame = cycle_ms_ / 1000 / platform_config_.output_config.video_config.frames_per_cycle;
     auto video_frames =  platform_config_.simulation_config.simulation_duration_s / video_sim_seconds_per_frame;
     auto video_fps = platform_config_.output_config.video_config.replay_speed / video_sim_seconds_per_frame;
     auto video_duration = video_frames / video_fps;
 
+    // Simulation Runtime
+    fmt::print("# Simulation Runtime\n");
+    fmt::print("  - Start: {}, End: {}, Epochs: {}\n",
+               simulation_init_time, simulation_finish_time, num_of_epochs);
+    fmt::print("  - Runtime: init_time = {}s, runtime = {}s, runtime_per_epoch = {}s.\n",
+               total_init_time_s, total_runtime_s,total_runtime_s / num_of_epochs);
 
     // Report the platform configurations
     fmt::print("# System Configurations\n");
@@ -300,8 +329,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(double total_runti
                platform_config_.mod_system_config.request_config.max_pickup_wait_time_s,
                platform_config_.simulation_config.warmup_duration_s / (cycle_ms_ / 1000),
                platform_config_.simulation_config.simulation_duration_s / (cycle_ms_ / 1000),
-               platform_config_.simulation_config.winddown_duration_s / (cycle_ms_ / 1000),
-               system_shutdown_time_ms_ / cycle_ms_);
+               platform_config_.simulation_config.winddown_duration_s / (cycle_ms_ / 1000), num_of_epochs);
     fmt::print("  - Dispatch Config: dispatcher = {}, rebalancer = {}.\n", "GI", "NR");
     fmt::print("  - Output Config: datalog = {}, video = {} (fps = {} and duration = {}s)\n",
                platform_config_.output_config.datalog_config.output_datalog,
@@ -310,15 +338,8 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(double total_runti
 
     if (orders_.size() == 0) {
         fmt::print("{}\n", dividing_line);
-        exit(0);
         return;
     }
-
-    // Simulation Runtime
-    fmt::print("# Simulation Runtime\n");
-    fmt::print(" - Runtime: total_runtime = {}s, average_runtime_per_simulated_second = {}.\n",
-               total_runtime_s,
-               total_runtime_s * 1000 / system_shutdown_time_ms_);
 
     // Report order status
     auto order_count = 0;

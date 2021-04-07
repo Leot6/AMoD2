@@ -21,7 +21,7 @@ DemandGenerator::DemandGenerator(std::string _path_to_taxi_data, std::string _si
     request_density_ = _request_density;
     fmt::print("[INFO] ({}s) Calculate the initial request index {} ({}).\n",
                float (getTimeStamp() - s_time)/1000, init_request_idx_, _simulation_start_time);
-    fmt::print("[INFO] Demand Generator is ready.\n");
+    fmt::print("[INFO] # Demand Generator is ready. #\n");
 }
 
 std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms) {

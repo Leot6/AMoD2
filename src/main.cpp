@@ -15,6 +15,8 @@
 #include <yaml-cpp/yaml.h>
 
 int main(int argc, const char *argv[]) {
+    auto s_time = getTimeStamp();
+
     // get the root directory
     const int MAXPATH=250;
     char buffer[MAXPATH];
@@ -84,9 +86,9 @@ int main(int argc, const char *argv[]) {
     Platform<decltype(router), decltype(demand_generator)> platform{
         std::move(platform_config), std::move(router), std::move(demand_generator)};
 
-
     // Run simulation.
-    platform.run_simulation();
+    platform.run_simulation(ConvertTimeSecondToDate(getTimeStamp() / 1000),
+                            float (getTimeStamp() - s_time) / 1000);
 
     return 0;
 }

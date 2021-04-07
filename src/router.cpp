@@ -22,7 +22,7 @@ Router::Router(DataFilePath _date_file_path_config) {
     shortest_path_table_ = LoadShortestPathTableFromCsvFile(path_to_shortest_path_data);
     mean_travel_time_table_ = LoadMeanTravelTimeTableFromCsvFile(path_to_mean_travel_time_data);
     travel_distance_table_ = LoadMeanTravelTimeTableFromCsvFile(path_to_travel_distance_data);
-    fmt::print("[INFO] Router is ready.\n");
+    fmt::print("[INFO] # Router is ready. #\n");
 }
 
 RoutingResponse Router::operator()(const Pos &origin, const Pos &destination, RoutingType type) {

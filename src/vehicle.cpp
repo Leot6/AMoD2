@@ -10,10 +10,10 @@
 #include <assert.h>
 
 void truncate_step_by_time(Step &step, uint64_t time_ms) {
-    fmt::print("Input step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
-    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
-               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
-               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
+//    fmt::print("Input step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
+//    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
+//               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
+//               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
 
     assert(step.poses.size() == 2 &&
            "Input step in truncate_step_by_time() should have 2 poses!");
@@ -37,10 +37,10 @@ void truncate_step_by_time(Step &step, uint64_t time_ms) {
     step.distance_mm *= (1 - ratio);
     step.duration_ms -= time_ms;  // we do not use "*= (1 - ratio)" to avoid bug cases, e.g. "11119 / 11120 = 1.0"
 
-    fmt::print("Output step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
-    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
-               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
-               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
+//    fmt::print("Output step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
+//    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
+//               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
+//               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
 
     assert(step.poses.size() == 2 &&
            "Output step in truncate_step_by_time() should have 2 poses!");
@@ -209,10 +209,10 @@ void advance_vehicle(Vehicle &vehicle,
                 orders[wp.order_id].status = OrderStatus::PICKED_UP;
                 vehicle.load++;
 
-                fmt::print("[DEBUG] T = {}s: Vehicle #{} picked up Order #{}\n",
-                           system_time_ms / 1000.0,
-                           vehicle.id,
-                           wp.order_id);
+//                fmt::print("[DEBUG] T = {}s: Vehicle #{} picked up Order #{}\n",
+//                           system_time_ms / 1000.0,
+//                           vehicle.id,
+//                           wp.order_id);
             } else if (wp.op == WaypointOp::DROPOFF) {
                 assert(vehicle.load > 0 && "Vehicle's load should not be zero before a dropoff!");
 
@@ -220,10 +220,10 @@ void advance_vehicle(Vehicle &vehicle,
                 orders[wp.order_id].status = OrderStatus::DROPPED_OFF;
                 vehicle.load--;
 
-                fmt::print("[DEBUG] T = {}s: Vehicle #{} droped off Order #{}\n",
-                           system_time_ms / 1000.0,
-                           vehicle.id,
-                           wp.order_id);
+//                fmt::print("[DEBUG] T = {}s: Vehicle #{} droped off Order #{}\n",
+//                           system_time_ms / 1000.0,
+//                           vehicle.id,
+//                           wp.order_id);
             }
 
             continue;

@@ -47,14 +47,8 @@ int main(int argc, const char *argv[]) {
 
     std::vector<int> ss = {1, 2, 3, 4};
 
-    auto dd = ss;
 
-    ss[2] = 100;
-    std::cout << "ss[2] " << ss[2] << std::endl;
-    std::cout << "dd[2] " << dd[2] << std::endl;
-
-    Step empty_step;
-    std::cout << "empty_step " << empty_step.duration_ms << std::endl;
+    fmt::print("{getTimeStamp()}\n", getTimeStamp());
 
 
 //    PreprocessRequestDate("../datalog-gitignore/taxi-data/manhattan-taxi-20160525");
