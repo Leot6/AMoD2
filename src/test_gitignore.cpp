@@ -3,11 +3,12 @@
 //
 #undef NDEBUG
 #include <assert.h>
-#include "config.hpp"
-#include "types.hpp"
-#include "utility.hpp"
-#include "demand_generator.hpp"
-#include "router.hpp"
+#include "simulator/config.hpp"
+#include "simulator/types.hpp"
+#include "simulator/demand_generator.hpp"
+#include "simulator/router.hpp"
+#include "utility/utility.hpp"
+
 #include <libc.h>
 
 int test(int & a) {

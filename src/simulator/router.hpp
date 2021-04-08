@@ -8,7 +8,7 @@
 
 #include "types.hpp"
 #include "config.hpp"
-#include "utility.hpp"
+#include "../utility/utility.hpp"
 
 /// \brief Stateful functor that finds the shortest route for an O/D pair on request.
 class Router {

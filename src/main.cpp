@@ -1,10 +1,10 @@
 /// \author Jian Wen
 /// \date 2021/01/29
 
-#include "config.hpp"
-#include "demand_generator.hpp"
-#include "platform.hpp"
-#include "router.hpp"
+#include "simulator/config.hpp"
+#include "simulator/demand_generator.hpp"
+#include "simulator/platform.hpp"
+#include "simulator/router.hpp"
 
 #undef NDEBUG
 #include <assert.h>

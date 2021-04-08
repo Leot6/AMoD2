@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "types.hpp"
+#include "../simulator/types.hpp"
 #include <cstddef>
 
 /// \brief Assign the pending orders to the vehicles using Insertion Heuristics.

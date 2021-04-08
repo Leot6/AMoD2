@@ -25,7 +25,8 @@ find_package(Boost 1.52.0 COMPONENTS filesystem system thread iostreams chrono d
 ########################################################################
 
 # The libraries
-add_library(mod-abm-lib src/config.cpp src/demand_generator.cpp src/router.cpp src/vehicle.cpp src/utility.cpp)
+add_library(mod-abm-lib src/simulator/config.cpp src/simulator/demand_generator.cpp src/simulator/router.cpp
+        src/simulator/vehicle.cpp src/utility/utility.cpp)
 target_link_libraries(mod-abm-lib yaml-cpp fmt::fmt ${Python3_INCLUDE_DIRS})
 target_compile_features(mod-abm-lib PRIVATE cxx_std_17)
 

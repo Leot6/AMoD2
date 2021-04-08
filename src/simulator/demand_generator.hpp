@@ -4,7 +4,7 @@
 #pragma once
 
 #include "types.hpp"
-#include "utility.hpp"
+#include "../utility/utility.hpp"
 
 #include <cstdint>
 #include <memory>

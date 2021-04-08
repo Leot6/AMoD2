@@ -3,9 +3,9 @@
 //
 
 #pragma once
-#include "types.hpp"
 #include "csv.hpp"
-#include "router.hpp"
+#include "../simulator/types.hpp"
+#include "../simulator/router.hpp"
 
 #include <sys/stat.h>
 #include <fmt/format.h>
