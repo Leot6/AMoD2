@@ -5,9 +5,9 @@
 
 #include "dispatch.hpp"
 #include "platform.hpp"
-#include "progressbar.hpp"
 #include "tqdm.h"
-
+#undef NDEBUG
+#include <assert.h>
 #include <fmt/format.h>
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
@@ -77,23 +77,13 @@ void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation(std::string simul
     auto s_time = getTimeStamp();
 
     // Run simulation cycle by cycle.
-
-    progressbar bar(system_shutdown_time_ms_ / cycle_ms_);
-    fmt::print("(Δt={}s)", cycle_ms_ / 1000);
+    tqdm bar1(fmt::format("AMoD (Δt={}s)", cycle_ms_ / 1000),
+              system_shutdown_time_ms_ / cycle_ms_);
     while (system_time_ms_ < system_shutdown_time_ms_) {
-        bar.update();
+        bar1.progress();
         run_cycle();
     }
-
-
-//    tqdm bar1;
-//    int i = 0;
-//    while (system_time_ms_ < system_shutdown_time_ms_) {
-//        bar1.progress(i, system_shutdown_time_ms_ / cycle_ms_);
-//        i += 1;
-//        run_cycle();
-//    }
-//    bar1.finish();
+    bar1.finish();
 
     // Create report.
     fmt::print("\n[INFO] Simulation completed. Creating report.\n");
@@ -104,7 +94,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation(std::string simul
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::run_cycle() {
-//    fmt::print("[INFO] T = {}s: Cycle {} is running.\n",
+//    fmt::print("\n\n[DEBUG] T = {}s: Epoch {} is running.\n",
 //               system_time_ms_ / 1000.0,
 //               system_time_ms_ / cycle_ms_);
 
@@ -134,7 +124,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::run_cycle() {
         platform_config_.output_config.datalog_config.output_datalog) {
         write_to_datalog();
     }
-
+//    fmt::print("\n");
     return;
 }
 

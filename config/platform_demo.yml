@@ -25,7 +25,7 @@ simulation_config:
   simulation_start_time: "2016-05-25 00:00:00"
   cycle_s: 30
   warmup_duration_min: 30  # 30min
-  simulation_duration_min: 60  # <= 1371min
+  simulation_duration_min: 1300  # <= 1371min
   winddown_duration_min: 39  # 39min
 output_config:
   datalog_config:

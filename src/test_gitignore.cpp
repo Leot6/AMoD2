@@ -7,7 +7,8 @@
 #include "types.hpp"
 #include "utility.hpp"
 #include "demand_generator.hpp"
-# include "router.hpp"
+#include "router.hpp"
+#include <libc.h>
 
 int test(int & a) {
     a = 3;
@@ -48,7 +49,13 @@ int main(int argc, const char *argv[]) {
     std::vector<int> ss = {1, 2, 3, 4};
 
 
-    fmt::print("{getTimeStamp()}\n", getTimeStamp());
+    struct winsize size;
+
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
+
+    printf("%d rows, %d columns\n", size.ws_row, size.ws_col);
+    printf("%d\n",size.ws_col);
+    printf("%d\n",size.ws_row);
 
 
 //    PreprocessRequestDate("../datalog-gitignore/taxi-data/manhattan-taxi-20160525");

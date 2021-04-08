@@ -11,6 +11,10 @@
 #include <vector>
 #include <math.h>
 #include <algorithm>
+#include <libc.h>
+#include <sys/ioctl.h>
+#undef NDEBUG
+#include <assert.h>
 
 class tqdm {
     private:
@@ -21,7 +25,7 @@ class tqdm {
         std::vector<double> deq_t;
         std::vector<int> deq_n;
         int nupdates = 0;
-        int total_ = 0;
+        int total_iterations = 0;
         int period = 1;
         unsigned int smoothing = 50;
         bool use_ema = true;
@@ -32,42 +36,16 @@ class tqdm {
         bool in_screen = (system("test $STY") == 0);
         bool in_tmux = (system("test $TMUX") == 0);
         bool is_tty = isatty(1);
-        bool use_colors = true;
-        bool color_transition = true;
-        int width = 40;
-
-        std::string right_pad = "▏";
+        int width = 30;
+        int width_adjustment = 40;
         std::string label = "";
-
-        void hsv_to_rgb(float h, float s, float v, int& r, int& g, int& b) {
-            if (s < 1e-6) {
-                v *= 255.;
-                r = v; g = v; b = v;
-            }
-            int i = (int)(h*6.0);
-            float f = (h*6.)-i;
-            int p = (int)(255.0*(v*(1.-s)));
-            int q = (int)(255.0*(v*(1.-s*f)));
-            int t = (int)(255.0*(v*(1.-s*(1.-f))));
-            v *= 255;
-            i %= 6;
-            int vi = (int)v;
-            if (i == 0)      { r = vi; g = t;  b = p;  }
-            else if (i == 1) { r = q;  g = vi; b = p;  }
-            else if (i == 2) { r = p;  g = vi; b = t;  }
-            else if (i == 3) { r = p;  g = q;  b = vi; }
-            else if (i == 4) { r = t;  g = p;  b = vi; }
-            else if (i == 5) { r = vi; g = p;  b = q;  }
-        }
+        int current_iteration = 0;
 
     public:
-        tqdm() {
-            if (in_screen) {
-                set_theme_basic();
-                color_transition = false;
-            } else if (in_tmux) {
-                color_transition = false;
-            }
+        tqdm(std::string label_, int total_iterations_) {
+            label = label_;
+            total_iterations = total_iterations_;
+            set_theme_braille();
         }
 
         void reset() {
@@ -78,7 +56,8 @@ class tqdm {
             deq_n.clear();
             period = 1;
             nupdates = 0;
-            total_ = 0;
+            total_iterations = 0;
+            current_iteration = 0;
             label = "";
         }
 
@@ -87,30 +66,33 @@ class tqdm {
         void set_theme_braille() { bars = {" ", "⡀", "⡄", "⡆", "⡇", "⡏", "⡟", "⡿", "⣿" }; }
         void set_theme_braille_spin() { bars = {" ", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠇", "⠿" }; }
         void set_theme_vertical() { bars = {"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█", "█"}; }
-        void set_theme_basic() {
-            bars = {" ", " ", " ", " ", " ", " ", " ", " ", "#"}; 
-            right_pad = "|";
+        void set_theme_basic() {bars = {" ", " ", " ", " ", " ", " ", " ", " ", "#"};
         }
         void set_label(std::string label_) { label = label_; }
-        void disable_colors() {
-            color_transition = false;
-            use_colors = false;
-        }
 
         void finish() {
-            progress(total_,total_);
+            current_iteration = total_iterations;
+            progress();
             printf("\n");
             fflush(stdout);
         }
-        void progress(int curr, int tot) {
-            if(is_tty && (curr%period == 0)) {
-                total_ = tot;
+        void progress() {
+            current_iteration += 1;
+            struct winsize size;
+            ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
+            int window_width = size.ws_col;
+            width = window_width - width_adjustment - label.size();
+            if (width < 0 || width > 20) {
+                width = 30;
+            }
+
+            if(is_tty && (current_iteration%period == 0)) {
                 nupdates++;
                 auto now = std::chrono::system_clock::now();
                 double dt = ((std::chrono::duration<double>)(now - t_old)).count();
                 double dt_tot = ((std::chrono::duration<double>)(now - t_first)).count();
-                int dn = curr - n_old;
-                n_old = curr;
+                int dn = current_iteration - n_old;
+                n_old = current_iteration;
                 t_old = now;
                 if (deq_n.size() >= smoothing) deq_n.erase(deq_n.begin());
                 if (deq_t.size() >= smoothing) deq_t.erase(deq_t.begin());
@@ -133,39 +115,29 @@ class tqdm {
                 // learn an appropriate period length to avoid spamming stdout
                 // and slowing down the loop, shoot for ~25Hz and smooth over 3 seconds
                 if (nupdates > 10) {
-                    period = (int)( std::min(std::max((1.0/25)*curr/dt_tot,1.0), 5e5));
+                    period = (int)( std::min(std::max((1.0/25)*current_iteration/dt_tot,1.0), 5e5));
                     smoothing = 25*3;
                 }
-                double peta = (tot-curr)/avgrate;
-                double pct = (double)curr/(tot*0.01);
-                if( ( tot - curr ) <= period ) {
+                double peta = (total_iterations-current_iteration)/avgrate;
+                double pct = (double)current_iteration/(total_iterations*0.01);
+                if( ( total_iterations - current_iteration ) <= period ) {
                     pct = 100.0;
-                    avgrate = tot/dt_tot;
-                    curr = tot;
+                    avgrate = total_iterations/dt_tot;
+                    current_iteration = total_iterations;
                     peta = 0;
                 }
 
-                double fills = ((double)curr / tot * width);
-                int ifills = (int)fills;
-
-                printf("\015 ");
-                if (use_colors) {
-                    if (color_transition) {
-                        // red (hue=0) to green (hue=1/3)
-                        int r = 255, g = 255, b = 255;
-                        hsv_to_rgb(0.0+0.01*pct/3,0.65,1.0, r,g,b);
-                        printf("\033[38;2;%d;%d;%dm ", r, g, b);
-                    } else {
-                        printf("\033[32m ");
-                    }
-                }
-                for (int i = 0; i < ifills; i++) std::cout << bars[8];
-                if (!in_screen && (curr != tot)) printf("%s",bars[(int)(8.0*(fills-ifills))]);
-                for (int i = 0; i < width-ifills-1; i++) std::cout << bars[0];
-                printf("%s ", right_pad.c_str());
-                if (use_colors) printf("\033[1m\033[31m");
-                printf("%4.1f%% ", pct);
-                if (use_colors) printf("\033[34m");
+                int time_consumed_s = dt_tot;
+                int time_consumed_min = time_consumed_s / 60;
+                time_consumed_s %= 60;
+                int time_consumed_hour = time_consumed_min / 60;
+                time_consumed_min %= 60;
+                int time_remaining_s = peta;
+                int time_remaining_min = time_remaining_s / 60;
+                time_remaining_s %= 60;
+                int time_remaining_hour = time_remaining_min / 60;
+                time_remaining_min %= 60;
+                if (time_consumed_hour > 0 || time_remaining_hour > 0) { width -= 6; }
 
                 std::string unit = "Hz";
                 double div = 1.;
@@ -174,11 +146,37 @@ class tqdm {
                 } else if (avgrate > 1e3) {
                     unit = "kHz"; div = 1.0e3;
                 }
-                printf("[%4d/%4d | %3.1f %s | %.0fs<%.0fs] ", curr,tot,  avgrate/div, unit.c_str(), dt_tot, peta);
-                printf("%s ", label.c_str());
-                if (use_colors) printf("\033[0m\033[32m\033[0m\015 ");
 
-                if( ( tot - curr ) > period ) fflush(stdout);
+                double fills = ((double)current_iteration / total_iterations * width);
+                int ifills = (int)fills;
+
+                printf("\015 ");
+                // label
+                printf("%s:", label.c_str());
+                // percentage
+                printf("%4.1f%% ", pct);
+                // bar
+                for (int i = 0; i < ifills; i++) { std::cout << bars[8]; }
+                if (!in_screen && (current_iteration != total_iterations)) { printf("%s",bars[(int)(8.0*(fills-ifills))]); }
+                for (int i = 0; i < width-ifills-1; i++) { std::cout << bars[0]; }
+                // count
+                printf("▏%d/%d ", current_iteration, total_iterations);
+                // time and speed
+                if (time_consumed_hour > 0 || time_remaining_hour > 0) {
+                    printf("[%02d:%02d:%02d<%02d:%02d:%02d|%3.1f%s]",
+                           time_consumed_hour, time_consumed_min, time_consumed_s,
+                           time_remaining_hour, time_remaining_min, time_remaining_s,
+                           avgrate/div, unit.c_str());
+                } else {
+                    printf("[%02d:%02d<%02d:%02d|%3.1f%s]",
+                           time_consumed_min, time_consumed_s,
+                           time_remaining_min, time_remaining_s,
+                           avgrate/div, unit.c_str());
+//                    printf("[%.0fs<%.0fs|%3.1f%s]", dt_tot, peta, avgrate/div, unit.c_str());
+                }
+
+
+                if ((total_iterations - current_iteration) > period) { fflush(stdout); }
 
             }
         }
