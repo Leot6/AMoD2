@@ -34,6 +34,6 @@ output_config:
   video_config:
     render_video: false
     path_to_output_video: "/media-gitignore/demo.mp4"
-    frames_per_cycle: 3  # simulation_seconds_per_frame = cycle_s / frames_per_cycle
-    # total frames = simulation_duration_min * 60 / simulation_seconds_per_frame
-    replay_speed: 600  # fps = replay_speed / simulation_seconds_per_frame
+    frames_per_cycle: 3  # frame_length = cycle_s / frames_per_cycle
+    # total frames = simulation_duration_min * 60 / frame_length
+    replay_speed: 300  # fps = replay_speed / frame_length

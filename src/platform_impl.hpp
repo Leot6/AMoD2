@@ -294,9 +294,9 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simula
     auto main_sim_end_date = ConvertTimeSecondToDate(
             ConvertTimeDateToSeconds(sim_start_time_date) + main_sim_end_time_ms_ / 1000);
     auto num_of_epochs = system_shutdown_time_ms_ / cycle_ms_;
-    auto video_sim_seconds_per_frame = cycle_ms_ / 1000 / platform_config_.output_config.video_config.frames_per_cycle;
-    auto video_frames =  platform_config_.simulation_config.simulation_duration_s / video_sim_seconds_per_frame;
-    auto video_fps = platform_config_.output_config.video_config.replay_speed / video_sim_seconds_per_frame;
+    auto frame_length_s = cycle_ms_ / 1000 / platform_config_.output_config.video_config.frames_per_cycle;
+    auto video_frames =  platform_config_.simulation_config.simulation_duration_s / frame_length_s;
+    auto video_fps = platform_config_.output_config.video_config.replay_speed / frame_length_s;
     auto video_duration = video_frames / video_fps;
 
     // Simulation Runtime
@@ -321,10 +321,9 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simula
                platform_config_.simulation_config.simulation_duration_s / (cycle_ms_ / 1000),
                platform_config_.simulation_config.winddown_duration_s / (cycle_ms_ / 1000), num_of_epochs);
     fmt::print("  - Dispatch Config: dispatcher = {}, rebalancer = {}.\n", "GI", "NR");
-    fmt::print("  - Output Config: datalog = {}, video = {} (fps = {} and duration = {}s)\n",
-               platform_config_.output_config.datalog_config.output_datalog,
+    fmt::print("  - Output Config: video = {}, frame length = {}s, fps = {}, duration = {}s\n",
                platform_config_.output_config.video_config.render_video,
-               video_fps, video_duration);
+               frame_length_s, video_fps, video_duration);
 
     if (orders_.size() == 0) {
         fmt::print("{}\n", dividing_line);
