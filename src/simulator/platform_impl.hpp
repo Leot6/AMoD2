@@ -84,7 +84,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation(std::string simul
     bar1.finish();
 
     // Create report.
-    fmt::print("\n[INFO] Simulation completed. Creating report.\n");
+    fmt::print("[INFO] Simulation completed. Creating report.\n");
     create_report(simulation_init_time, total_init_time_s, float (getTimeStamp() - s_time) / 1000);
 
     return;

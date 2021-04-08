@@ -16,7 +16,7 @@ area_config:
   lat_max: 40.8825
 mod_system_config:
   fleet_config:
-    fleet_size: 3000
+    fleet_size: 300
     veh_capacity: 4
   request_config:
     request_density: 1
@@ -25,7 +25,7 @@ simulation_config:
   simulation_start_time: "2016-05-25 00:00:00"
   cycle_s: 30
   warmup_duration_min: 30  # 30min
-  simulation_duration_min: 1300  # <= 1371min
+  simulation_duration_min: 30  # <= 1371min
   winddown_duration_min: 39  # 39min
 output_config:
   datalog_config:

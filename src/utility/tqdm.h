@@ -160,7 +160,7 @@ class tqdm {
                 if (!in_screen && (current_iteration != total_iterations)) { printf("%s",bars[(int)(8.0*(fills-ifills))]); }
                 for (int i = 0; i < width-ifills-1; i++) { std::cout << bars[0]; }
                 // count
-                printf("▏%d/%d ", current_iteration, total_iterations);
+                printf("%d/%d ", current_iteration, total_iterations);
                 // time and speed
                 if (time_consumed_hour > 0 || time_remaining_hour > 0) {
                     printf("[%02d:%02d:%02d<%02d:%02d:%02d|%3.1f%s]",
