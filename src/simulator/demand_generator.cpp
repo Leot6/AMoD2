@@ -59,12 +59,14 @@ std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv) {
     std::vector<Request> all_requests = {};
     using namespace csv;
     CSVReader reader(path_to_csv);
+
     for (CSVRow& row: reader) { // Input iterator
-        auto onid = row["onid"].get<size_t>();
-        auto dnid = row["dnid"].get<size_t>();
-        auto request_time_date = row["ptime"].get();
-        auto request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request_time_date) * 1000;
-        all_requests.emplace_back(onid,dnid,request_time_ms, request_time_date);
+        Request request;
+        request.origin_node_id = row["onid"].get<size_t>();
+        request.destination_node_id = row["dnid"].get<size_t>();
+        request.request_time_date = row["ptime"].get();
+        request.request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request.request_time_date) * 1000;
+        all_requests.push_back(request);
     }
 //    fmt::print("[DEBUG] ({}s) Load request data from {}, with {} requests.\n",
 //               float (getTimeStamp() - s_time)/1000, path_to_csv, all_requests.size());

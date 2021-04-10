@@ -23,8 +23,9 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
     for (auto i = 0; i < fleet_config.fleet_size; i++) {
         station_idx = i * num_of_stations / fleet_config.fleet_size;
         vehicle.id = i;
+        vehicle.capacity = fleet_config.veh_capacity;
         vehicle.pos = router_func_.getNodePos(router_func_.getVehicleStationId(station_idx));
-        vehicles_.emplace_back(vehicle);
+        vehicles_.push_back(vehicle);
     }
 //    fmt::print("[DEBUG] ({}s) Generated {} vehicles.\n",
 //               float (getTimeStamp() - s_time)/1000,vehicles_.size());
@@ -97,20 +98,18 @@ void Platform<RouterFunc, DemandGeneratorFunc>::run_cycle() {
 //               system_time_ms_ / 1000.0,
 //               system_time_ms_ / cycle_ms_);
 
-    // Advance the vehicles frame by frame in main simulation.
+    // Advance the vehicles
     if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
+        // Advance the vehicles frame by frame (if render_video=false, then frame_ms_=cycle_ms_)
         for (auto ms = 0; ms < cycle_ms_; ms += frame_ms_) {
             advance_vehicles(frame_ms_);
-
             if (ms < cycle_ms_ - frame_ms_ &&
                 platform_config_.output_config.datalog_config.output_datalog) {
                 write_to_datalog();
             }
         }
-    }
-    // Advance the vehicles by the whole cycle in main simulation.
-    else {
-        advance_vehicles(cycle_ms_);
+    } else {
+        advance_vehicles(cycle_ms_);  // Advance the vehicles by the whole cycle.
     }
 
     // Generate orders.
@@ -171,7 +170,7 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::generate_orders()
             request.request_time_ms +
             static_cast<uint64_t>(
                 platform_config_.mod_system_config.request_config.max_pickup_wait_time_s * 1000);
-        pending_order_ids.emplace_back(orders_.size());
+        pending_order_ids.push_back(orders_.size());
         orders_.emplace_back(std::move(order));
 
 //        fmt::print("[DEBUG] Order #{} requested at {}, from origin ({}, {}) to destination "

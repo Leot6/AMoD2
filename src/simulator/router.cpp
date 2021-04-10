@@ -48,16 +48,13 @@ RoutingResponse Router::operator()(const Pos &origin, const Pos &destination, Ro
         std::reverse(path.begin(), path.end());
 
         // build the detailed route from the path
-        Step step;
         for (int i = 0; i < path.size()-1; i++) {
-
+            Step step;
             size_t u = path[i];
             size_t v = path[i + 1];
             step.distance_mm = travel_distance_table_[u - 1][v - 1] * 1000;
             step.duration_ms = mean_travel_time_table_[u - 1][v - 1] * 1000;
             step.poses = {getNodePos(u), getNodePos(v)};
-//            step.poses.push_back(getNodePos(u));
-//            step.poses.push_back(getNodePos(v));
             response.route.distance_mm += step.distance_mm;
             response.route.duration_ms += step.duration_ms;
             response.route.steps.push_back(step);
