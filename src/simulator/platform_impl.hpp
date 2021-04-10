@@ -19,8 +19,9 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
     const auto &fleet_config = platform_config_.mod_system_config.fleet_config;
     auto num_of_stations = router_func_.getNumOfVehicleStations();
     Vehicle vehicle;
+    size_t station_idx;
     for (auto i = 0; i < fleet_config.fleet_size; i++) {
-        size_t station_idx = i * num_of_stations / fleet_config.fleet_size;
+        station_idx = i * num_of_stations / fleet_config.fleet_size;
         vehicle.id = i;
         vehicle.pos = router_func_.getNodePos(router_func_.getVehicleStationId(station_idx));
         vehicles_.emplace_back(vehicle);
@@ -225,14 +226,12 @@ void Platform<RouterFunc, DemandGeneratorFunc>::write_to_datalog() {
         for (const auto &waypoint : vehicle.schedule) {
             YAML::Node waypoint_node;
             auto count = 0;
-            for (const auto &leg : waypoint.route.legs) {
-                for (const auto &step : leg.steps) {
-                    for (const auto &pose : step.poses) {
-                        YAML::Node leg_node;
-                        leg_node["lon"] = fmt::format("{:.6f}", pose.lon);
-                        leg_node["lat"] = fmt::format("{:.6f}", pose.lat);
-                        waypoint_node.push_back(std::move(leg_node));
-                    }
+            for (const auto &step : waypoint.route.steps) {
+                for (const auto &pose : step.poses) {
+                    YAML::Node step_node;
+                    step_node["lon"] = fmt::format("{:.6f}", pose.lon);
+                    step_node["lat"] = fmt::format("{:.6f}", pose.lat);
+                    waypoint_node.push_back(std::move(step_node));
                 }
             }
             waypoints_node.push_back(std::move(waypoint_node));

@@ -30,18 +30,12 @@ struct Step {
     std::vector<Pos> poses;
 };
 
-/// \brief Leg of route consisting of total distance, total duration as well as a vector of steps.
-struct Leg {
-    int32_t distance_mm = 0;
-    int32_t duration_ms = 0;
-    std::vector<Step> steps;
-};
 
-/// \brief Route consisting of total distance, total duration as well as a vector of legs.
+/// \brief Route consisting of total distance, total duration as well as a vector of steps.
 struct Route {
     int32_t distance_mm = 0;
     int32_t duration_ms = 0;
-    std::vector<Leg> legs;
+    std::vector<Step> steps;
 };
 
 /// \brief The type of the routing call.
@@ -62,7 +56,7 @@ enum class RoutingStatus {
 struct RoutingResponse {
     RoutingStatus status = RoutingStatus::UNDEFINED; // the status
     std::string message = ""; // message from the router, in case it does not return a good route
-    Route route;              // the route
+    Route route;              // the leg, consisting of steps from origin to destination
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

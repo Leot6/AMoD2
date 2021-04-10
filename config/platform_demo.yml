@@ -16,7 +16,7 @@ area_config:
   lat_max: 40.8825
 mod_system_config:
   fleet_config:
-    fleet_size: 300
+    fleet_size: 5
     veh_capacity: 4
   request_config:
     request_density: 1

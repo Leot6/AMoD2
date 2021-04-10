@@ -10,9 +10,6 @@
 /// \brief Trucate Step so that the first x milliseconds worth of route is completed.
 void truncate_step_by_time(Step &step, uint64_t time_ms);
 
-/// \brief Trucate Leg so that the first x milliseconds worth of route is completed.
-void truncate_leg_by_time(Leg &leg, uint64_t time_ms);
-
 /// \brief Trucate Route so that the first x milliseconds worth of route is completed.
 void truncate_route_by_time(Route &route, uint64_t time_ms);
 
@@ -45,13 +42,10 @@ void build_route_for_a_vehicle_schedule(Vehicle &vehicle, RouterFunc &router_fun
     }
 
     if (vehicle.step_to_pos.duration_ms > 0) {
-        auto &first_leg_of_the_schedule = vehicle.schedule[0].route.legs[0];
-        first_leg_of_the_schedule.duration_ms += vehicle.step_to_pos.duration_ms;
-        first_leg_of_the_schedule.distance_mm += vehicle.step_to_pos.distance_mm;
-        first_leg_of_the_schedule.steps.insert(first_leg_of_the_schedule.steps.begin(), vehicle.step_to_pos);
-        vehicle.schedule[0].route.duration_ms = first_leg_of_the_schedule.duration_ms;
-        vehicle.schedule[0].route.distance_mm = first_leg_of_the_schedule.distance_mm;
-
-
+        auto &route = vehicle.schedule[0].route;
+        route.duration_ms += vehicle.step_to_pos.duration_ms;
+        route.distance_mm += vehicle.step_to_pos.distance_mm;
+        route.steps.insert(route.steps.begin(), vehicle.step_to_pos);
+        assert(route.steps[0].poses[0].node_id == route.steps[0].poses[1].node_id);
     }
 }

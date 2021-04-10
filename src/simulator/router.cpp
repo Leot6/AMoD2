@@ -12,16 +12,16 @@
 #include <fstream>
 
 Router::Router(DataFilePath _date_file_path_config) {
-    auto &path_to_station_data = _date_file_path_config.path_to_vehicle_stations;
-    auto &path_to_node_data = _date_file_path_config.path_to_network_nodes;
-    auto &path_to_shortest_path_data = _date_file_path_config.path_to_shortest_path_table;
-    auto &path_to_mean_travel_time_data = _date_file_path_config.path_to_mean_travel_time_table;
-    auto &path_to_travel_distance_data = _date_file_path_config.path_to_travel_distance_table;
-    vehicle_stations_ = LoadNetworkNodesFromCsvFile(path_to_station_data);
-    network_nodes_ = LoadNetworkNodesFromCsvFile(path_to_node_data);
-    shortest_path_table_ = LoadShortestPathTableFromCsvFile(path_to_shortest_path_data);
-    mean_travel_time_table_ = LoadMeanTravelTimeTableFromCsvFile(path_to_mean_travel_time_data);
-    travel_distance_table_ = LoadMeanTravelTimeTableFromCsvFile(path_to_travel_distance_data);
+    vehicle_stations_ = LoadNetworkNodesFromCsvFile(
+            _date_file_path_config.path_to_vehicle_stations);
+    network_nodes_ = LoadNetworkNodesFromCsvFile(
+            _date_file_path_config.path_to_network_nodes);
+    shortest_path_table_ = LoadShortestPathTableFromCsvFile(
+            _date_file_path_config.path_to_shortest_path_table);
+    mean_travel_time_table_ = LoadMeanTravelTimeTableFromCsvFile(
+            _date_file_path_config.path_to_mean_travel_time_table);
+    travel_distance_table_ = LoadMeanTravelTimeTableFromCsvFile(
+            _date_file_path_config.path_to_travel_distance_table);
     fmt::print("[INFO] Router is ready.\n");
 }
 
@@ -30,11 +30,12 @@ RoutingResponse Router::operator()(const Pos &origin, const Pos &destination, Ro
     // onid: origin node id; dnid: destination node id
     auto onid = origin.node_id;
     auto dnid = destination.node_id;
-    response.route.duration_ms = mean_travel_time_table_[onid - 1][dnid - 1] * 1000;
-    response.route.distance_mm = travel_distance_table_[onid - 1][dnid - 1] * 1000;
-    if (response.route.duration_ms >= 0) {
-        response.status = RoutingStatus::OK;
+
+    if (type == RoutingType::TIME_ONLY) {
+        response.route.duration_ms = mean_travel_time_table_[onid - 1][dnid - 1] * 1000;
+        response.route.distance_mm = travel_distance_table_[onid - 1][dnid - 1] * 1000;
     }
+
     if (type == RoutingType::FULL_ROUTE) {
         // build the simple node path from the shortest path table
         std::vector<size_t> path = {dnid};
@@ -47,37 +48,43 @@ RoutingResponse Router::operator()(const Pos &origin, const Pos &destination, Ro
         std::reverse(path.begin(), path.end());
 
         // build the detailed route from the path
-        Leg leg;
+        Step step;
         for (int i = 0; i < path.size()-1; i++) {
-            Step step;
+
             size_t u = path[i];
             size_t v = path[i + 1];
             step.distance_mm = travel_distance_table_[u - 1][v - 1] * 1000;
             step.duration_ms = mean_travel_time_table_[u - 1][v - 1] * 1000;
-            step.poses.push_back(getNodePos(u));
-            step.poses.push_back(getNodePos(v));
-            leg.distance_mm += step.distance_mm;
-            leg.duration_ms += step.duration_ms;
-            leg.steps.push_back(step);
+            step.poses = {getNodePos(u), getNodePos(v)};
+//            step.poses.push_back(getNodePos(u));
+//            step.poses.push_back(getNodePos(v));
+            response.route.distance_mm += step.distance_mm;
+            response.route.duration_ms += step.duration_ms;
+            response.route.steps.push_back(step);
         }
+
         // the last step of a leg is always consisting of 2 identical points as a flag of the end of the leg
         Step flag_step;
         flag_step.distance_mm = 0;
         flag_step.duration_ms = 0;
         flag_step.poses.push_back(getNodePos(dnid));
         flag_step.poses.push_back(getNodePos(dnid));
-        leg.steps.push_back(flag_step);
-        response.route.legs.push_back(leg);  // a route in response always has one leg
+        response.route.steps.push_back(flag_step);
 
-        // make sure that "response.route.duration_ms = leg.duration_ms"
+        // check the accuracy of routing
         int deviation_due_to_data_structure = 5;
-        assert(abs(response.route.duration_ms - leg.duration_ms) <= deviation_due_to_data_structure);
-        assert(abs(response.route.distance_mm - leg.distance_mm) <= deviation_due_to_data_structure);
-        response.route.duration_ms = leg.duration_ms;
-        response.route.distance_mm = leg.distance_mm;
-        assert(response.route.legs.size() == 1);
+        assert(abs(response.route.duration_ms - mean_travel_time_table_[onid - 1][dnid - 1] * 1000)
+               <= deviation_due_to_data_structure);
+        assert(abs(response.route.distance_mm - travel_distance_table_[onid - 1][dnid - 1] * 1000)
+               <= deviation_due_to_data_structure);
     }
-    response.status = RoutingStatus::OK;
+
+    if (response.route.duration_ms >= 0) {
+        response.status = RoutingStatus::OK;
+    } else {
+        response.status = RoutingStatus::ERROR;
+    }
+
     return response;
 }
 
