@@ -7,6 +7,7 @@
 #include "simulator/router.hpp"
 
 #undef NDEBUG
+
 #include <assert.h>
 #include <iostream>
 #include <cstddef>
@@ -18,7 +19,7 @@ int main(int argc, const char *argv[]) {
     auto s_time_ms = getTimeStampMs();
 
     // get the root directory
-    const int MAXPATH=250;
+    const int MAXPATH = 250;
     char buffer[MAXPATH];
     getcwd(buffer, MAXPATH);
     std::string build_file_directory = buffer;
@@ -26,9 +27,9 @@ int main(int argc, const char *argv[]) {
 
     // Check the input arugment list.
     std::string path_to_config_file;
-    if (argc == 1){
+    if (argc == 1) {
         path_to_config_file = root_directory + "/config/platform_demo.yml";
-    } else if (argc == 2){
+    } else if (argc == 2) {
         CheckFileExistence((std::string &) argv[1]);
         path_to_config_file = argv[1];
     } else {
@@ -36,7 +37,7 @@ int main(int argc, const char *argv[]) {
                    "[ERROR] \n"
                    "- Usage: <prog name> <arg1>. \n"
                    "  <arg1> is the path to the platform config file. \n"
-                   "- Example: {} \"./config/platform_demo.yml\"  \n",argv[0]);
+                   "- Example: {} \"./config/platform_demo.yml\"  \n", argv[0]);
         return -1;
     }
     CheckFileExistence(path_to_config_file);
@@ -84,11 +85,11 @@ int main(int argc, const char *argv[]) {
 
     // Create the simulation platform with the config loaded from file.
     Platform<decltype(router), decltype(demand_generator)> platform{
-        std::move(platform_config), std::move(router), std::move(demand_generator)};
+            std::move(platform_config), std::move(router), std::move(demand_generator)};
 
     // Run simulation.
     platform.run_simulation(ConvertTimeSecondToDate(getTimeStampMs() / 1000),
-                            float (getTimeStampMs() - s_time_ms) / 1000);
+                            float(getTimeStampMs() - s_time_ms) / 1000);
 
     return 0;
 }

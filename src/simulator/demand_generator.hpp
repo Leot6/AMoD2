@@ -4,7 +4,7 @@
 #pragma once
 
 #include "types.hpp"
-#include "../utility/time_converter.hpp"
+#include "../utility/utility_functions.hpp"
 #include "../utility/csv.hpp"
 
 #include <cstdint>

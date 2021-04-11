@@ -8,7 +8,7 @@
 
 #include "types.hpp"
 #include "config.hpp"
-#include "../utility/time_converter.hpp"
+#include "../utility/utility_functions.hpp"
 #include "../utility/csv.hpp"
 
 /// \brief Stateful functor that finds the shortest route for an O/D pair on request.
