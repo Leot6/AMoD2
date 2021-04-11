@@ -6,7 +6,7 @@
 #include "config.hpp"
 #include "types.hpp"
 #include "vehicle.hpp"
-#include "../utility/utility.hpp"
+#include "../utility/time_converter.hpp"
 #include "../utility/tqdm.h"
 #include "../dispatcher/dispatch.hpp"
 

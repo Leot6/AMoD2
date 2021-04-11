@@ -99,7 +99,7 @@ Pos Router::getNodePos(const size_t &node_id) {
 
 std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
-    auto s_time = getTimeStamp();
+    auto s_time_ms = getTimeStampMs();
     std::vector<Pos> all_nodes = {};
     std::ifstream data_csv(path_to_csv); //load the data file
     std::string line;
@@ -118,13 +118,13 @@ std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv) {
         all_nodes.push_back(node);
     }
 //    fmt::print("[DEBUG] ({}s) Loaded node data from {}, with {} nodes.\n",
-//               float(getTimeStamp() - s_time) / 1000, path_to_csv, all_nodes.size());
+//               float(getTimeStampMs() - s_time_ms) / 1000, path_to_csv, all_nodes.size());
     return std::move(all_nodes);
 }
 
 std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
-    auto s_time = getTimeStamp();
+    auto s_time_ms = getTimeStampMs();
     std::vector<std::vector<int>> shortest_path_table = {};
     using namespace csv;
     csv::CSVReader csv_reader(path_to_csv);
@@ -142,14 +142,14 @@ std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_
         shortest_path_table.push_back(int_row);
     }
 //    fmt::print("[DEBUG] ({}s) Loaded shortest path data from {}, with {} * {} node pairs.\n",
-//               float(getTimeStamp() - s_time) / 1000, path_to_csv,
+//               float(getTimeStampMs() - s_time_ms) / 1000, path_to_csv,
 //               shortest_path_table.size(), shortest_path_table[0].size());
     return shortest_path_table;
 }
 
 std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
-    auto s_time = getTimeStamp();
+    auto s_time_ms = getTimeStampMs();
     std::vector<std::vector<float>> mean_travel_time_table = {};
     using namespace csv;
     csv::CSVReader csv_reader(path_to_csv);
@@ -167,7 +167,7 @@ std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string p
         mean_travel_time_table.push_back(float_row);
     }
 //    fmt::print("[DEBUG] ({}s) Loaded shortest path data from {}, with {} * {} node pairs.\n",
-//               float(getTimeStamp() - s_time) / 1000, path_to_csv,
+//               float(getTimeStampMs() - s_time_ms) / 1000, path_to_csv,
 //               mean_travel_time_table.size(), mean_travel_time_table[0].size());
     return mean_travel_time_table;
 }

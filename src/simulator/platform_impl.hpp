@@ -15,20 +15,20 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
     : platform_config_(std::move(_platform_config)), router_func_(std::move(_router_func)),
       demand_generator_func_(std::move(_demand_generator_func)) {
     // Initialize the fleet.
-    auto s_time = getTimeStamp();
+    auto s_time_ms = getTimeStampMs();
     const auto &fleet_config = platform_config_.mod_system_config.fleet_config;
     auto num_of_stations = router_func_.getNumOfVehicleStations();
     Vehicle vehicle;
+    vehicle.capacity = fleet_config.veh_capacity;
     size_t station_idx;
     for (auto i = 0; i < fleet_config.fleet_size; i++) {
         station_idx = i * num_of_stations / fleet_config.fleet_size;
         vehicle.id = i;
-        vehicle.capacity = fleet_config.veh_capacity;
         vehicle.pos = router_func_.getNodePos(router_func_.getVehicleStationId(station_idx));
         vehicles_.push_back(vehicle);
     }
 //    fmt::print("[DEBUG] ({}s) Generated {} vehicles.\n",
-//               float (getTimeStamp() - s_time)/1000,vehicles_.size());
+//               float (getTimeStampMs() - s_time_ms)/1000,vehicles_.size());
 
     // Initialize the simulation times.
     system_time_ms_ = 0;
@@ -71,10 +71,10 @@ Platform<RouterFunc, DemandGeneratorFunc>::~Platform() {
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation(std::string simulation_init_time,
+void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation(std::string simulation_init_time_date,
                                                                float total_init_time_s) {
-    create_report(simulation_init_time, total_init_time_s, 0.0);
-    auto s_time = getTimeStamp();
+    create_report(simulation_init_time_date, total_init_time_s, 0.0);
+    auto s_time_ms = getTimeStampMs();
 
     // Run simulation cycle by cycle.
     tqdm bar1(fmt::format("AMoD (Δt={}s)", cycle_ms_ / 1000),
@@ -87,7 +87,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation(std::string simul
 
     // Create report.
     fmt::print("[INFO] Simulation completed. Creating report.\n");
-    create_report(simulation_init_time, total_init_time_s, float (getTimeStamp() - s_time) / 1000);
+    create_report(simulation_init_time_date, total_init_time_s, float (getTimeStampMs() - s_time_ms) / 1000);
 
     return;
 };
@@ -270,16 +270,16 @@ void Platform<RouterFunc, DemandGeneratorFunc>::write_to_datalog() {
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simulation_init_time,
+void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simulation_init_time_date,
                                                               float total_init_time_s, float total_runtime_s) {
     std::string dividing_line = "*******************************************************************************";
     fmt::print("{}\n", dividing_line);
 
-    std::string simulation_finish_time;
+    std::string simulation_finish_time_date;
     if (orders_.size() == 0) {
-        simulation_finish_time = "0000-00-00 00:00:00";
+        simulation_finish_time_date = "0000-00-00 00:00:00";
     } else {
-        simulation_finish_time = ConvertTimeSecondToDate(getTimeStamp() / 1000);
+        simulation_finish_time_date = ConvertTimeSecondToDate(getTimeStampMs() / 1000);
     }
 
     auto sim_start_time_date = platform_config_.simulation_config.simulation_start_time;
@@ -298,7 +298,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simula
     // Simulation Runtime
     fmt::print("# Simulation Runtime\n");
     fmt::print("  - Start: {}, End: {}, Epochs: {}\n",
-               simulation_init_time, simulation_finish_time, num_of_epochs);
+               simulation_init_time_date, simulation_finish_time_date, num_of_epochs);
     fmt::print("  - Runtime: init_time = {}s, runtime = {}s, runtime_per_epoch = {}s.\n",
                total_init_time_s, total_runtime_s,total_runtime_s / num_of_epochs);
 

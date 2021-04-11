@@ -13,14 +13,14 @@ DemandGenerator::DemandGenerator(std::string _path_to_taxi_data, std::string _si
                                  float _request_density) {
     all_requests_ = LoadRequestsFromCsvFile(_path_to_taxi_data);
 //    auto all_request1 = LoadRequestsFromCsvFile_naive_version(_path_to_taxi_data);
-    auto s_time = getTimeStamp();
+    auto s_time = getTimeStampMs();
     init_request_time_ms_ = ComputeTheAccumulatedSecondsFrom0Clock(_simulation_start_time) * 1000;
     while (all_requests_[init_request_idx_].request_time_ms < init_request_time_ms_){
         init_request_idx_ += 1;
     }
     request_density_ = _request_density;
 //    fmt::print("[DEBUG] ({}s) Calculate the initial request index {} ({}).\n",
-//               float (getTimeStamp() - s_time)/1000, init_request_idx_, _simulation_start_time);
+//               float (getTimeStampMs() - s_time)/1000, init_request_idx_, _simulation_start_time);
     fmt::print("[INFO] Demand Generator is ready.\n");
 }
 
@@ -55,7 +55,7 @@ const std::vector<Request> &DemandGenerator::GetAllRequests() const {
 
 std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
-    auto s_time = getTimeStamp();
+    auto s_time = getTimeStampMs();
     std::vector<Request> all_requests = {};
     using namespace csv;
     CSVReader reader(path_to_csv);
@@ -69,6 +69,6 @@ std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv) {
         all_requests.push_back(request);
     }
 //    fmt::print("[DEBUG] ({}s) Load request data from {}, with {} requests.\n",
-//               float (getTimeStamp() - s_time)/1000, path_to_csv, all_requests.size());
+//               float (getTimeStampMs() - s_time)/1000, path_to_csv, all_requests.size());
     return std::move(all_requests);
 }

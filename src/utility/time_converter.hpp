@@ -29,11 +29,11 @@ std::string ConvertTimeSecondToDate(int32_t time_sec);
 int32_t ComputeTheAccumulatedSecondsFrom0Clock(std::string time_date);
 
 /// \brief The current time of the system, used to calculate the computational time
-std::time_t getTimeStamp();
+std::time_t getTimeStampMs();
 
-#define TIMER_START(FUNC) auto FUNC = getTimeStamp();
+#define TIMER_START(FUNC) auto FUNC = getTimeStampMs();
 #define TIMER_END(FUNC) std::cout << "[" << #FUNC << "]" << " cost time: " << \
-(static_cast<float>(getTimeStamp() - FUNC)/1000.0f) << "s" << std::endl;
+(static_cast<float>(getTimeStampMs() - FUNC)/1000.0f) << "s" << std::endl;
 
 /// \brief A function to check whether the data file is existing.
 void CheckFileExistence(const std::string& path_to_file);

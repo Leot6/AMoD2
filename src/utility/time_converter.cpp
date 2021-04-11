@@ -1,7 +1,7 @@
 //
 // Created by Leot on 2021/3/30.
 //
-#include "utility.hpp"
+#include "time_converter.hpp"
 #include <iomanip>
 
 int32_t ConvertTimeDateToSeconds(std::string time_date) {
@@ -34,7 +34,7 @@ std::string ConvertTimeSecondToDate(int32_t time_sec) {
     return converted_time_date;
 }
 
-std::time_t getTimeStamp() {
+std::time_t getTimeStampMs() {
     std::chrono::time_point<std::chrono::system_clock,std::chrono::milliseconds> tp =
             std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
     std::time_t timestamp_ms = tp.time_since_epoch().count();

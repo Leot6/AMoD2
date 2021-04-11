@@ -7,7 +7,7 @@
 #include "simulator/types.hpp"
 #include "simulator/demand_generator.hpp"
 #include "simulator/router.hpp"
-#include "utility/utility.hpp"
+//#include "utility/time_converter.h"
 
 #include <libc.h>
 
@@ -29,7 +29,7 @@ int main(int argc, const char *argv[]) {
     auto platform_config = load_platform_config(path_to_config_file, root_directory);
 
 //    // Create the demand generator based on the input demand file.
-//    DemandGenerator demand_generator{path + platform_config.data_file_path.path_to_taxi_data,
+//    DemandGenerator demand_generator{platform_config.data_file_path.path_to_taxi_data,
 //                                     platform_config.simulation_config.simulation_start_time,
 //                                     platform_config.mod_system_config.request_config.request_density};
 
@@ -50,13 +50,10 @@ int main(int argc, const char *argv[]) {
     std::vector<int> ss = {1, 2, 3, 4};
 
 
-    struct winsize size;
-
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
-
-    printf("%d rows, %d columns\n", size.ws_row, size.ws_col);
-    printf("%d\n",size.ws_col);
-    printf("%d\n",size.ws_row);
+    auto sim_s_time = platform_config.simulation_config.simulation_start_time;
+    fmt::print("sim_s_time {}\n", sim_s_time);
+    auto sim_s_time_ms = getTimeStampMs();
+    fmt::print("sim_s_time_ms {}\n", sim_s_time_ms);
 
 
 //    PreprocessRequestDate("../datalog-gitignore/taxi-data/manhattan-taxi-20160525");
