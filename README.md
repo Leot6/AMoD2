@@ -47,3 +47,4 @@ brew install git
 brew install cmake python ffmpeg
 brew install boost libzip libxml2 tbb ccache GDAL
 ```
+At least cmake 3.14.5 is needed to support CMake command "FetchContent_MakeAvailable".
