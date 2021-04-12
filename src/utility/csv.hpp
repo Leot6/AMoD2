@@ -7785,7 +7785,7 @@ static std::size_t json_extra_space(csv::string_view& s) noexcept
       case '\t':
       {
         // from c (1 byte) to \x (2 bytes)
-        result += 1;
+        result++;
         break;
       }
 

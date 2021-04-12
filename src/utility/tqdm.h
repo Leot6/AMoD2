@@ -77,7 +77,7 @@ class tqdm {
             fflush(stdout);
         }
         void progress() {
-            current_iteration += 1;
+            current_iteration++;
             struct winsize size;
             ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
             int window_width = size.ws_col;
@@ -172,9 +172,7 @@ class tqdm {
                            time_consumed_min, time_consumed_s,
                            time_remaining_min, time_remaining_s,
                            avgrate/div, unit.c_str());
-//                    printf("[%.0fs<%.0fs|%3.1f%s]", dt_tot, peta, avgrate/div, unit.c_str());
                 }
-
 
                 if ((total_iterations - current_iteration) > period) { fflush(stdout); }
 

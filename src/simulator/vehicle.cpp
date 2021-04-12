@@ -6,7 +6,6 @@
 #include <fmt/format.h>
 
 #undef NDEBUG
-
 #include <assert.h>
 
 void truncate_step_by_time(Step &step, uint64_t time_ms) {

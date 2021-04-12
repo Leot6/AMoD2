@@ -3,9 +3,6 @@
 //
 
 #pragma once
-#include "csv.hpp"
-#include "../simulator/types.hpp"
-#include "../simulator/router.hpp"
 
 #include <sys/stat.h>
 #include <fmt/format.h>
@@ -32,8 +29,9 @@ int32_t ComputeTheAccumulatedSecondsFrom0Clock(std::string time_date);
 std::time_t getTimeStampMs();
 
 #define TIMER_START(FUNC) auto FUNC = getTimeStampMs();
-#define TIMER_END(FUNC) std::cout << "[" << #FUNC << "]" << " cost time: " << \
-(static_cast<float>(getTimeStampMs() - FUNC)/1000.0f) << "s" << std::endl;
+#define TIMER_END(FUNC) std::cout << "[DEBUG] (" << \
+(static_cast<float>(getTimeStampMs() - FUNC) / 1000.0f) * pow(10, 0) \
+<< "s) ";
 
 /// \brief A function to check whether the data file is existing.
 void CheckFileExistence(const std::string& path_to_file);

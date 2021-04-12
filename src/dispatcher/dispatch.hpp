@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../simulator/types.hpp"
+#include "../utility/utility_functions.hpp"
 #include <cstddef>
 
 /// \brief Assign the pending orders to the vehicles using Insertion Heuristics.

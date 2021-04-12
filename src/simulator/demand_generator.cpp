@@ -5,9 +5,11 @@
 
 #include <string>
 #include <cstdint>
-#include <fmt/format.h>
-
 #include <algorithm>
+#include <fmt/format.h>
+#undef NDEBUG
+#include <assert.h>
+
 
 DemandGenerator::DemandGenerator(std::string _path_to_taxi_data, std::string _simulation_start_time,
                                  float _request_density) {
@@ -16,12 +18,13 @@ DemandGenerator::DemandGenerator(std::string _path_to_taxi_data, std::string _si
     auto s_time = getTimeStampMs();
     init_request_time_ms_ = ComputeTheAccumulatedSecondsFrom0Clock(_simulation_start_time) * 1000;
     while (all_requests_[init_request_idx_].request_time_ms < init_request_time_ms_){
-        init_request_idx_ += 1;
+        init_request_idx_++;
     }
     request_density_ = _request_density;
 //    fmt::print("[DEBUG] ({}s) Calculate the initial request index {} ({}).\n",
 //               float (getTimeStampMs() - s_time)/1000, init_request_idx_, _simulation_start_time);
     fmt::print("[INFO] Demand Generator is ready.\n");
+
 }
 
 std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms) {
@@ -42,7 +45,7 @@ std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms)
         if (new_request.origin_node_id == 0){
             break;
         }
-        current_request_count_ += 1;
+        current_request_count_++;
         new_request_idx = init_request_idx_ + (int32_t)(current_request_count_ / request_density_);
         requests.push_back(new_request);
     }

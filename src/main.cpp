@@ -2,18 +2,14 @@
 /// \date 2021/01/29
 
 #include "simulator/config.hpp"
+#include "simulator/router.hpp"
 #include "simulator/demand_generator.hpp"
 #include "simulator/platform.hpp"
-#include "simulator/router.hpp"
 
-#undef NDEBUG
-
-#include <assert.h>
 #include <iostream>
-#include <cstddef>
-#include <cstdlib>
 #include <fmt/format.h>
-#include <yaml-cpp/yaml.h>
+#undef NDEBUG
+#include <assert.h>
 
 int main(int argc, const char *argv[]) {
     auto s_time_ms = getTimeStampMs();

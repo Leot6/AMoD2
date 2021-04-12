@@ -4,9 +4,10 @@
 #pragma once
 
 #include "platform.hpp"
+
+#include <fmt/format.h>
 #undef NDEBUG
 #include <assert.h>
-#include <fmt/format.h>
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
 Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_config,
@@ -58,6 +59,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
                    datalog_config.path_to_output_datalog);
     }
     fmt::print("[INFO] Platform is ready.\n");
+
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
@@ -166,10 +168,14 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::generate_orders()
         order.status = OrderStatus::REQUESTED;
         order.request_time_ms = request.request_time_ms;
         order.request_time_date = request.request_time_date;
+        order.shortest_travel_time_ms =
+                router_func_(order.origin, order.destination, RoutingType::TIME_ONLY).route.duration_ms;
         order.max_pickup_time_ms =
-            request.request_time_ms +
-            static_cast<uint64_t>(
-                platform_config_.mod_system_config.request_config.max_pickup_wait_time_s * 1000);
+                request.request_time_ms +
+                static_cast<uint64_t>(platform_config_.mod_system_config.request_config.max_pickup_wait_time_s * 1000);
+        order.max_dropoff_time_ms =
+                request.request_time_ms + order.shortest_travel_time_ms +
+                static_cast<uint64_t>(platform_config_.mod_system_config.request_config.max_pickup_wait_time_s * 2000);
         pending_order_ids.push_back(orders_.size());
         orders_.emplace_back(std::move(order));
 
@@ -272,7 +278,12 @@ void Platform<RouterFunc, DemandGeneratorFunc>::write_to_datalog() {
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simulation_init_time_date,
                                                               float total_init_time_s, float total_runtime_s) {
-    std::string dividing_line = "*******************************************************************************";
+    // get the width of the current terminal window
+    struct winsize size;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
+    int window_width = size.ws_col;
+    if (window_width == 0 || window_width > 90) { window_width = 90; }
+    std::string dividing_line(window_width, '-');
     fmt::print("{}\n", dividing_line);
 
     std::string simulation_finish_time_date;

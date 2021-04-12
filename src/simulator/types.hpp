@@ -111,7 +111,9 @@ struct Order {
     OrderStatus status = OrderStatus::REQUESTED;
     int32_t request_time_ms = 0;
     std::string request_time_date = "0000-00-00 00:00:00";
+    int32_t shortest_travel_time_ms = 0;
     int32_t max_pickup_time_ms = 0;
+    int32_t max_dropoff_time_ms = 0;
     int32_t pickup_time_ms = 0;
     int32_t dropoff_time_ms = 0;
 };
@@ -122,7 +124,6 @@ struct Order {
 
 /// \brief The operation associated with a waypoint.
 enum class WaypointOp {
-    UNDEFINED, // uninitialized value
     PICKUP,    // we pick up a order at this waypoint
     DROPOFF,   // we drop off a order at this waypoint
 };

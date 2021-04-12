@@ -7,7 +7,7 @@
 #include "simulator/types.hpp"
 #include "simulator/demand_generator.hpp"
 #include "simulator/router.hpp"
-//#include "utility/utility_functions.h"
+//#include "utility/utility_functions.hpp"
 
 #include <libc.h>
 
@@ -54,6 +54,11 @@ int main(int argc, const char *argv[]) {
     fmt::print("sim_s_time {}\n", sim_s_time);
     auto sim_s_time_ms = getTimeStampMs();
     fmt::print("sim_s_time_ms {}\n", sim_s_time_ms);
+
+    size_t cc = 2;
+    fmt::print("cc {}\n", cc);
+    cc++;
+    fmt::print("cc {}\n", cc);
 
 
 //    PreprocessRequestDate("../datalog-gitignore/taxi-data/manhattan-taxi-20160525");

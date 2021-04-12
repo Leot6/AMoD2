@@ -37,6 +37,10 @@ void assign_order_through_insertion_heuristics(Order &order,
                                               RouterFunc &router_func) {
     InsertionResult res;
 
+    auto test = getTimeStampMs();
+
+//    fmt::print("[DEBUG] ({}s)\n", float (getTimeStampMs() - test)/1000);
+
     // Iterate through all vehicles and find the one with least additional cost.
     for (const auto &vehicle : vehicles) {
         auto res_this_vehicle = compute_cost_of_inserting_order_to_vehicle(
@@ -181,13 +185,14 @@ InsertionResult compute_cost_of_inserting_order_to_vehicle(const Order &order,
 template <typename RouterFunc>
 std::pair<bool, uint64_t>
 compute_cost_of_inserting_order_to_vehicle_given_pickup_and_dropoff_indices(
-    const Order &order,
-    const std::vector<Order> &orders,
-    const Vehicle &vehicle,
-    size_t pickup_index,
-    size_t dropoff_index,
-    uint64_t system_time_ms,
-    RouterFunc &router_func) {
+        const Order &order,
+        const std::vector<Order> &orders,
+        const Vehicle &vehicle,
+        size_t pickup_index,
+        size_t dropoff_index,
+        uint64_t system_time_ms,
+        RouterFunc &router_func) {
+
     auto new_schedule = generate_schedule(
         order, vehicle, pickup_index, dropoff_index, RoutingType::TIME_ONLY, router_func);
 
@@ -277,3 +282,4 @@ std::vector<Waypoint> generate_schedule(const Order &order,
 
     assert(false && "Logical error! We should never reach this line of code!");
 }
+
