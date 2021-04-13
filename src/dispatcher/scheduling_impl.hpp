@@ -7,7 +7,9 @@
 #include "scheduling.hpp"
 
 #include <fmt/format.h>
+
 #undef NDEBUG
+
 #include <assert.h>
 
 SchedulingResult ComputeScheduleOfInsertingOrderToVehicle(const Order &order,
@@ -21,15 +23,15 @@ SchedulingResult ComputeScheduleOfInsertingOrderToVehicle(const Order &order,
     for (const auto &sub_schedule: sub_schedules) {
         const auto num_wps = sub_schedule.size();
         // insert the order's pickup point
-        for (int pickup_idx = 0; pickup_idx <= num_wps; pickup_idx++ ) {
+        for (int pickup_idx = 0; pickup_idx <= num_wps; pickup_idx++) {
             // insert the order's dropoff point
             for (int dropoff_idx = pickup_idx; dropoff_idx <= num_wps; dropoff_idx++) {
                 auto new_schedule = GenerateScheduleFromSubschedule(
                         order, vehicle, sub_schedule, pickup_idx, dropoff_idx, router_func);
-                auto [feasible_this_schedule, violation_type] = ValidateSchedule(
+                auto[feasible_this_schedule, violation_type] = ValidateSchedule(
                         new_schedule, pickup_idx, dropoff_idx, order, orders, vehicle, system_time_ms);
                 if (feasible_this_schedule) {
-                    new_schedule_cost_ms = ComputeScheduleCost(inserting_result.schedule, orders, vehicle);
+                    new_schedule_cost_ms = ComputeScheduleCost(new_schedule, orders, vehicle, system_time_ms);
                     if (new_schedule_cost_ms < scheduling_result.best_schedule_cost_ms) {
                         scheduling_result.best_schedule_idx = scheduling_result.feasible_schedules.size();
                         scheduling_result.best_schedule_cost_ms = new_schedule_cost_ms;
@@ -45,8 +47,8 @@ SchedulingResult ComputeScheduleOfInsertingOrderToVehicle(const Order &order,
     return scheduling_result;
 }
 
-template <typename RouterFunc>
-std::vector<Waypoint> GenerateScheduleFromSubschedule(const Order &order,
+template<typename RouterFunc>
+std::vector<Waypoint> GenerateScheduleFromSubSchedule(const Order &order,
                                                       const Vehicle &vehicle,
                                                       const std::vector<Waypoint> &sub_schedule,
                                                       size_t pickup_idx,
@@ -55,7 +57,7 @@ std::vector<Waypoint> GenerateScheduleFromSubschedule(const Order &order,
     std::vector<Waypoint> new_schedule;
 
     auto pos = vehicle.pos;
-    auto idx = 0;
+    int idx = 0;
     while (true) {
         if (idx == pickup_idx) {
             auto route_response = router_func(pos, order.origin, RoutingType::TIME_ONLY);
@@ -82,9 +84,9 @@ std::vector<Waypoint> GenerateScheduleFromSubschedule(const Order &order,
         if (route_response.status != RoutingStatus::OK) { return {}; }
         pos = sub_schedule[idx].pos;
         new_schedule.emplace_back(Waypoint{pos,
-                                  vehicle.schedule[idx].op,
-                                  vehicle.schedule[idx].order_id,
-                                  std::move(route_response.route)});
+                                           vehicle.schedule[idx].op,
+                                           vehicle.schedule[idx].order_id,
+                                           std::move(route_response.route)});
 
         idx++;
     }
@@ -92,7 +94,7 @@ std::vector<Waypoint> GenerateScheduleFromSubschedule(const Order &order,
     assert(false && "Logical error! We should never reach this line of code!");
 }
 
-template <typename RouterFunc>
+template<typename RouterFunc>
 std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
                                       size_t pickup_idx,
                                       size_t dropoff_idx,
@@ -115,7 +117,7 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
                 // since the violation happens before the drop-off of the order
                 if (idx <= dropoff_idx) { return {false, 1}; }
                 return {false, 0};
-            } else if (wp.op == WaypointOp::DROPOFF && accumulated_time_ms > orders[wp.order_id].max_pickup_time_ms) {
+            } else if (wp.op == WaypointOp::DROPOFF && accumulated_time_ms > orders[wp.order_id].max_dropoff_time_ms) {
                 // (wp.order_id == order.id) means the max dropoff constraint of the inserted order is violated,
                 // since later dropoff brings longer delay, we do not need to check later dropoff idx.
                 if (idx <= dropoff_idx || wp.order_id == order.id) { return {false, 1}; }
@@ -141,6 +143,25 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
 
 uint64_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
                              const std::vector<Order> &orders,
-                             const Vehicle &vehicle) {
+                             const Vehicle &vehicle,
+                             uint64_t system_time_ms) {
+    auto cost_pickup_ms = 0;
+    auto cost_dropoff_ms = 0;
+    auto accumulated_time_ms = vehicle.step_to_pos.duration_ms;
 
+    for (const auto &wp : schedule) {
+        accumulated_time_ms += wp.route.duration_ms;
+        if (wp.op == WaypointOp::PICKUP) {
+            cost_pickup_ms += system_time_ms + accumulated_time_ms - orders[wp.order_id].request_time_ms;
+            assert(system_time_ms + accumulated_time_ms - orders[wp.order_id].request_time_ms >= 0);
+        }
+        if (wp.op == WaypointOp::DROPOFF) {
+            cost_dropoff_ms += system_time_ms + accumulated_time_ms -
+                               (orders[wp.order_id].request_time_ms + orders[wp.order_id].shortest_travel_time_ms);
+            assert(system_time_ms + accumulated_time_ms -
+                   (orders[wp.order_id].request_time_ms + orders[wp.order_id].shortest_travel_time_ms) >= 0);
+        }
+    }
+    auto cost_ms = cost_pickup_ms + cost_dropoff_ms;
+    return cost_ms;
 }

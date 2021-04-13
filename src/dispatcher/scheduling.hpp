@@ -42,7 +42,7 @@ SchedulingResult ComputeScheduleOfInsertingOrderToVehicle(const Order &order,
 /// \param dropoff_index The index in the waypoint list where we drop off.
 /// \tparam router_func The router func that finds path between two poses.
 template <typename RouterFunc>
-std::vector<Waypoint> GenerateScheduleFromSubschedule(const Order &order,
+std::vector<Waypoint> GenerateScheduleFromSubSchedule(const Order &order,
                                                       const Vehicle &vehicle,
                                                       const std::vector<Waypoint> &sub_schedule,
                                                       size_t pickup_index,
@@ -66,6 +66,7 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
 /// \details The cost of serving the schedule is defined as the sum of each order's waiting time and travel delay.
 uint64_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
                              const std::vector<Order> &orders,
-                             const Vehicle &vehicle);
+                             const Vehicle &vehicle,
+                             uint64_t system_time_ms);
 // Implementation is put in a separate file for clarity and maintainability.
 #include "scheduling_impl.hpp"
