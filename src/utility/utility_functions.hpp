@@ -4,8 +4,11 @@
 
 #pragma once
 
+#include "simulator/types.hpp"
+
 #include <sys/stat.h>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include <iostream>
 #include <fstream>
@@ -28,13 +31,14 @@ int32_t ComputeTheAccumulatedSecondsFrom0Clock(std::string time_date);
 /// \brief The current time of the system, used to calculate the computational time
 std::time_t getTimeStampMs();
 
-#define TIMER_START(FUNC) auto FUNC = getTimeStampMs();
-#define TIMER_END(FUNC) std::cout << "[DEBUG] (" << \
-(static_cast<float>(getTimeStampMs() - FUNC) / 1000.0f) * pow(10, 0) \
-<< "s) ";
+#define TIMER_START(start_time) auto start_time = getTimeStampMs();
+#define TIMER_END(start_time) std::cout << "  (" << (getTimeStampMs() - start_time) / 1000.0 * pow(10, 0) << "s)\n";
 
 /// \brief A function to check whether the data file is existing.
-void CheckFileExistence(const std::string& path_to_file);
+void CheckFileExistence(const std::string &path_to_file);
+
+/// \brief A function to print the schedule in terminal.
+void SchedulePrinter(const Vehicle &vehicle, const std::vector<Waypoint> &schedule);
 
 /////// \brief A function saving data to a csv file.
 //void saveTwoDimentionArr2csv(std::vector<std::vector<float>> &arr, int row, int col, char*filename);

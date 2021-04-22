@@ -4,8 +4,8 @@
 #pragma once
 
 #include "types.hpp"
-#include "../utility/utility_functions.hpp"
-#include "../utility/csv.hpp"
+#include "utility/utility_functions.hpp"
+#include "utility/csv.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -21,10 +21,10 @@ class DemandGenerator {
     /// \brief Main functor that generates the requests til the target system time.
     std::vector<Request> operator()(uint64_t target_system_time_ms);
 
-    const std::vector<Request> & GetAllRequests() const;
+    const std::vector<Request> & getAllRequests() const;
 
 
-  private:
+private:
     /// \brief The system time starting from 0.
     uint64_t system_time_ms_ = 0;
 

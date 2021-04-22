@@ -49,6 +49,19 @@ void CheckFileExistence(const std::string& path_to_file) {
     }
 }
 
+void SchedulePrinter(const Vehicle &vehicle, const std::vector<Waypoint> &schedule) {
+    fmt::print("[DEBUG] Vehicle #{} ({}) schedule ([node_id, pod, order_id]):",
+               vehicle_status_to_string(vehicle.status), vehicle.id);
+    for (const auto &wp : schedule) {
+        auto pod = 0;
+        if (wp.op == WaypointOp::PICKUP) { pod = 1; }
+        else if (wp.op == WaypointOp::DROPOFF) { pod = -1; }
+        fmt::print(" [{}, {}, {}]", wp.pos.node_id, pod, wp.order_id);
+    }
+    fmt::print("\n");
+
+}
+
 //void saveTwoDimentionArr2csv(std::vector<std::vector<float>> &arr, int row, int col, char*filename) {
 //    std::ofstream outFile;
 //    outFile.open(filename);

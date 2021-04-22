@@ -3,49 +3,25 @@
 
 #pragma once
 #include "types.hpp"
+#include "config.hpp"
 
 #undef NDEBUG
 #include <assert.h>
 
 /// \brief Trucate Step so that the first x milliseconds worth of route is completed.
-void truncate_step_by_time(Step &step, uint64_t time_ms);
+void TruncateStepByTime(Step &step, uint64_t time_ms);
 
 /// \brief Trucate Route so that the first x milliseconds worth of route is completed.
-void truncate_route_by_time(Route &route, uint64_t time_ms);
+void TruncateRouteByTime(Route &route, uint64_t time_ms);
 
-/// \brief Advance the vehicle by x milliseconds .
+/// \brief Update the vehicle position by x milliseconds .
 /// \param vehicle the vehicle that contains a schedule to be processed.
 /// \param orders the reference to the orders.
 /// \param system_time_ms the current system time in milliseconds.
 /// \param time_ms the time in seconds that we need to advance the system.
 /// \param update_vehicle_stats true if we update the vehicle statistics.
-void advance_vehicle(Vehicle &vehicle,
+std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehicle,
                      std::vector<Order> &orders,
                      uint64_t system_time_ms,
                      uint64_t time_ms,
                      bool update_vehicle_stats = true);
-
-/// \brief Build the detailed route for a vehicle based on its assigned schedule.
-template <typename RouterFunc>
-void build_route_for_a_vehicle_schedule(Vehicle &vehicle, RouterFunc &router_func) {
-    auto pos = vehicle.pos;
-    for (auto i = 0; i < vehicle.schedule.size(); i++) {
-        auto &wp = vehicle.schedule[i];
-        auto route_response = router_func(pos, wp.pos, RoutingType::FULL_ROUTE);
-
-        // check the accuracy of routing
-        int deviation_due_to_data_structure = 5;
-        assert(abs(wp.route.duration_ms - route_response.route.duration_ms) <= deviation_due_to_data_structure);
-        assert(abs(wp.route.distance_mm - route_response.route.distance_mm) <= deviation_due_to_data_structure);
-        wp.route = std::move(route_response.route);
-        pos = wp.pos;
-    }
-
-    if (vehicle.step_to_pos.duration_ms > 0) {
-        auto &route = vehicle.schedule[0].route;
-        route.duration_ms += vehicle.step_to_pos.duration_ms;
-        route.distance_mm += vehicle.step_to_pos.distance_mm;
-        route.steps.insert(route.steps.begin(), vehicle.step_to_pos);
-        assert(route.steps[0].poses[0].node_id == route.steps[0].poses[1].node_id);
-    }
-}

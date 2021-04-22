@@ -4,7 +4,6 @@
 #pragma once
 
 #include "platform.hpp"
-
 #include <fmt/format.h>
 #undef NDEBUG
 #include <assert.h>
@@ -15,6 +14,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
                                                     DemandGeneratorFunc _demand_generator_func)
     : platform_config_(std::move(_platform_config)), router_func_(std::move(_router_func)),
       demand_generator_func_(std::move(_demand_generator_func)) {
+
     // Initialize the fleet.
     auto s_time_ms = getTimeStampMs();
     const auto &fleet_config = platform_config_.mod_system_config.fleet_config;
@@ -28,8 +28,13 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         vehicle.pos = router_func_.getNodePos(router_func_.getVehicleStationId(station_idx));
         vehicles_.push_back(vehicle);
     }
-//    fmt::print("[DEBUG] ({}s) Generated {} vehicles.\n",
-//               float (getTimeStampMs() - s_time_ms)/1000,vehicles_.size());
+
+//#ifdef DEBUG_INFO_GLOBAL
+//    fmt::print("[DEBUG] Check vehicles initial positions\n");
+//    for (const auto &vehicle : vehicles_) {
+//        fmt::print(" -vehicle {} at station {}\n", vehicle.id, vehicle.pos.node_id);
+//    }
+//#endif
 
     // Initialize the simulation times.
     system_time_ms_ = 0;
@@ -50,6 +55,20 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         main_sim_end_time_ms_ +
         static_cast<uint64_t>(platform_config_.simulation_config.winddown_duration_s * 1000);
 
+    // Initialize the dispatcher and rebalancer
+    if (platform_config_.mod_system_config.dispatch_config.dispatcher == "GI") {
+        dispatcher_ = DispatcherMethod::GI;
+    } else if (platform_config_.mod_system_config.dispatch_config.dispatcher == "SBA") {
+        dispatcher_ = DispatcherMethod::SBA;
+    } else if (platform_config_.mod_system_config.dispatch_config.dispatcher == "OSP") {
+        dispatcher_ = DispatcherMethod::OSP;
+    }
+    if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NONE") {
+       rebalancer_ = RebalancerMethod::NONE;
+    } else if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NR") {
+        rebalancer_ = RebalancerMethod::NR;
+    }
+
     // Open the output datalog file.
     const auto &datalog_config = platform_config_.output_config.datalog_config;
     if (datalog_config.output_datalog) {
@@ -67,153 +86,233 @@ Platform<RouterFunc, DemandGeneratorFunc>::~Platform() {
     // Close the datalog stream.
     if (datalog_ofstream_.is_open()) {
         datalog_ofstream_.close();
-
         fmt::print("[INFO] Closed the datalog. Program ends.\n");
     }
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::run_simulation(std::string simulation_init_time_date,
+void Platform<RouterFunc, DemandGeneratorFunc>::RunSimulation(std::string simulation_init_time_date,
                                                                float total_init_time_s) {
-    create_report(simulation_init_time_date, total_init_time_s, 0.0);
+    CreateReport(simulation_init_time_date, total_init_time_s, 0.0);
     auto s_time_ms = getTimeStampMs();
-
     // Run simulation cycle by cycle.
-    tqdm bar1(fmt::format("AMoD (Δt={}s)", cycle_ms_ / 1000),
-              system_shutdown_time_ms_ / cycle_ms_);
-    while (system_time_ms_ < system_shutdown_time_ms_) {
-        bar1.progress();
-        run_cycle();
+
+    if (DEBUG_PRINT) {
+        while (system_time_ms_ < system_shutdown_time_ms_) {RunCycle();}
+    } else {
+        tqdm bar1(fmt::format("AMoD (Δt={}s)",cycle_ms_ / 1000),
+                  system_shutdown_time_ms_ / cycle_ms_);
+        while (system_time_ms_ < system_shutdown_time_ms_) {
+            bar1.progress();
+            RunCycle();
+        }
+        bar1.finish();
     }
-    bar1.finish();
 
     // Create report.
     fmt::print("[INFO] Simulation completed. Creating report.\n");
-    create_report(simulation_init_time_date, total_init_time_s, float (getTimeStampMs() - s_time_ms) / 1000);
+    CreateReport(simulation_init_time_date, total_init_time_s,(getTimeStampMs() - s_time_ms) / 1000.0);
 
     return;
 };
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::run_cycle() {
-//    fmt::print("\n\n[DEBUG] T = {}s: Epoch {} is running.\n",
-//               system_time_ms_ / 1000.0,
-//               system_time_ms_ / cycle_ms_);
+void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
+#ifdef DEBUG_INFO_GLOBAL
+    TIMER_START(t)
+    if (DEBUG_PRINT) {
+        fmt::print("[DEBUG] T = {}s: Epoch {}/{} is running.\n",
+                   (system_time_ms_) / 1000.0,
+                   (system_time_ms_ + cycle_ms_) / cycle_ms_,
+                   system_shutdown_time_ms_ / cycle_ms_);
+    }
+#endif
 
-    // Advance the vehicles
+    // 1. Update the vehicles' positions and the orders' statuses.
     if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
-        // Advance the vehicles frame by frame (if render_video=false, then frame_ms_=cycle_ms_)
+        // Advance the vehicles frame by frame (if render_video=false, then frame_ms_=cycle_ms_).
         for (auto ms = 0; ms < cycle_ms_; ms += frame_ms_) {
-            advance_vehicles(frame_ms_);
+            UpdVehiclesPositions(frame_ms_);
             if (ms < cycle_ms_ - frame_ms_ &&
                 platform_config_.output_config.datalog_config.output_datalog) {
-                write_to_datalog();
+                WriteToDatalog();
             }
         }
     } else {
-        advance_vehicles(cycle_ms_);  // Advance the vehicles by the whole cycle.
+        // Advance the vehicles by the whole cycle.
+        UpdVehiclesPositions(cycle_ms_);
+    }
+    for (auto &order : orders_) {
+        if (order.status != OrderStatus::PENDING) { continue; }
+        // Reject the long waited orders.
+        if (order.request_time_ms + 1500 <= system_time_ms_ || order.max_pickup_time_ms <= system_time_ms_) {
+            order.status = OrderStatus::WALKAWAY;
+        }
     }
 
-    // Generate orders.
-    const auto pending_order_ids = generate_orders();
+    // 2. Generate orders.
+    const auto new_received_order_ids = GenerateOrders();
 
-    // Dispatch the pending orders.
-    dispatch(pending_order_ids);
+    // 3. Assign pending orders to vehicles.
+    if (dispatcher_ == DispatcherMethod::GI) {
+        AssignOrdersThroughGreedyInsertion(new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
+    }
 
+    // 4. Reposition idle vehicles to high demand areas.
+    if (rebalancer_ == RebalancerMethod::NR) {
+        RepositionIdleVehicleThroughNaiveRebalancer(new_received_order_ids, orders_, vehicles_, router_func_);
+    }
+
+    // 5. Write the datalog to file.
     if (system_time_ms_ > main_sim_start_time_ms_ && system_time_ms_ <= main_sim_end_time_ms_ &&
         platform_config_.output_config.datalog_config.output_datalog) {
-        write_to_datalog();
+        WriteToDatalog();
     }
-//    fmt::print("\n");
+
+#ifdef DEBUG_INFO_GLOBAL
+    if (DEBUG_PRINT) {
+        auto num_of_total_orders = orders_.size();
+        auto num_of_complete_orders = 0, num_of_onboard_orders = 0, num_of_picking_orders = 0,
+                num_of_pending_orders = 0, num_of_walkaway_orders = 0;
+        for (const auto &order : orders_) {
+            if (order.status == OrderStatus::COMPLETE) {
+                num_of_complete_orders++;
+            } else if (order.status == OrderStatus::ONBOARD) {
+                num_of_onboard_orders++;
+            } else if (order.status == OrderStatus::PICKING) {
+                num_of_picking_orders++;
+            } else if (order.status == OrderStatus::PENDING) {
+                num_of_pending_orders++;
+            } else if (order.status == OrderStatus::WALKAWAY) {
+                num_of_walkaway_orders++;
+            }
+        }
+        assert(num_of_total_orders == num_of_complete_orders + num_of_onboard_orders + num_of_picking_orders
+                                      + num_of_pending_orders + num_of_walkaway_orders);
+        fmt::print("        T = {}s: Epoch {}/{} has finished. Total orders received = {}, of which {} complete "
+                   "+ {} onboard + {} picking + {} pending + {} walkaway",
+                   (system_time_ms_) / 1000.0,
+                   (system_time_ms_) / cycle_ms_,
+                   system_shutdown_time_ms_ / cycle_ms_,
+                   num_of_total_orders, num_of_complete_orders,
+                   num_of_onboard_orders, num_of_picking_orders, num_of_pending_orders, num_of_walkaway_orders);
+        TIMER_END(t)
+        fmt::print("\n");
+    }
+#endif
+
     return;
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::advance_vehicles(uint64_t time_ms) {
+void Platform<RouterFunc, DemandGeneratorFunc>::UpdVehiclesPositions(uint64_t time_ms) {
+
+#ifdef DEBUG_INFO_GLOBAL
+    TIMER_START(t)
+    if (DEBUG_PRINT) {
+        fmt::print("        -Updating vehicles positions and orders statues by {}s...\n", time_ms / 1000);
+    }
+#endif
+
+    auto num_of_picked_orders = 0;
+    auto num_of_dropped_orders = 0;
+
     // Do it for each of the vehicles independently.
     for (auto &vehicle : vehicles_) {
-        advance_vehicle(vehicle,
-                        orders_,
-                        system_time_ms_,
-                        time_ms,
-                        (system_time_ms_ >= main_sim_start_time_ms_ &&
-                            system_time_ms_ < main_sim_end_time_ms_));
+        auto[new_picked_order_ids, new_dropped_order_ids] =
+        UpdVehiclePos(vehicle,
+                      orders_,
+                      system_time_ms_,
+                      time_ms,
+                      (system_time_ms_ >= main_sim_start_time_ms_ &&
+                       system_time_ms_ <= main_sim_end_time_ms_));
+        num_of_picked_orders += new_picked_order_ids.size();
+        num_of_dropped_orders += new_dropped_order_ids.size();
     }
 
     // Increment the system time.
     system_time_ms_ += time_ms;
 
-//    fmt::print(
-//        "[DEBUG] T = {}s: Advanced vehicles by {}s.\n", system_time_ms_ / 1000.0, time_ms / 1000.0);
+#ifdef DEBUG_INFO_GLOBAL
+    if (DEBUG_PRINT) {
+        int num_of_idle_vehicles = 0;
+        int num_of_rebalancing_vehicles = 0;
+        for (const auto &vehicle : vehicles_) {
+            if (vehicle.status == VehicleStatus::IDLE) { num_of_idle_vehicles++; }
+            else if (vehicle.status == VehicleStatus::REBALANCING) { num_of_rebalancing_vehicles++; }
+        }
+        fmt::print("            +Picked orders: {}, Dropped orders: {}\n",
+                   num_of_picked_orders, num_of_dropped_orders);
+        fmt::print("            +Idle vehicles: {}/{}, Rebalancing vehicles: {}/{}",
+                   num_of_idle_vehicles, vehicles_.size(), num_of_rebalancing_vehicles, vehicles_.size());
+        TIMER_END(t)
+    }
+#endif
 
     return;
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::generate_orders() {
+std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::GenerateOrders() {
+#ifdef DEBUG_INFO_GLOBAL
+    TIMER_START(t)
+    if (DEBUG_PRINT) {
+        fmt::print("        -Loading new orders...\n");
+    }
+#endif
+
     // Get order requests generated during the past cycle.
     auto requests = demand_generator_func_(system_time_ms_);
+    int32_t max_pickup_wait_time = platform_config_.mod_system_config.request_config.max_pickup_wait_time_s * 1000;
+    auto max_detour = platform_config_.mod_system_config.request_config.max_onboard_detour;
 
-//    fmt::print("[DEBUG] T = {}s: Generated {} request(s) in this cycle:\n",
-//               system_time_ms_ / 1000.0,
-//               requests.size());
-
-    // Add the requests into the order list as well as the pending orders.
-    std::vector<size_t> pending_order_ids;
+    // Add the new received requests into the order list.
+    std::vector<size_t> new_received_order_ids;
     for (auto &request : requests) {
         Order order;
         order.id = orders_.size();
         order.origin = router_func_.getNodePos(request.origin_node_id);
         order.destination = router_func_.getNodePos(request.destination_node_id);
-        order.status = OrderStatus::REQUESTED;
         order.request_time_ms = request.request_time_ms;
         order.request_time_date = request.request_time_date;
         order.shortest_travel_time_ms =
-                router_func_(order.origin, order.destination, RoutingType::TIME_ONLY).route.duration_ms;
+                router_func_(order.origin, order.destination, RoutingType::TIME_ONLY).duration_ms;
+        // max_wait = min(max_pickup_wait_time, shortest_travel_time * 0.7),
+        // max_total_delay = min(max_pickup_wait_time * 2, MaxWait + ShortestTravelTime * 0.3)
         order.max_pickup_time_ms =
-                request.request_time_ms +
-                static_cast<uint64_t>(platform_config_.mod_system_config.request_config.max_pickup_wait_time_s * 1000);
+                request.request_time_ms
+                + std::min(max_pickup_wait_time, static_cast<int32_t>(order.shortest_travel_time_ms * (2 - max_detour)));
         order.max_dropoff_time_ms =
-                request.request_time_ms + order.shortest_travel_time_ms +
-                static_cast<uint64_t>(platform_config_.mod_system_config.request_config.max_pickup_wait_time_s * 2000);
-        pending_order_ids.push_back(orders_.size());
-        orders_.emplace_back(std::move(order));
+                request.request_time_ms + order.shortest_travel_time_ms
+                + std::min(max_pickup_wait_time * 2,
+                         order.max_pickup_time_ms - order.request_time_ms
+                         + static_cast<int32_t>(order.shortest_travel_time_ms * (max_detour - 1)));
+        new_received_order_ids.push_back(orders_.size());
+        orders_.push_back(std::move(order));
 
-//        fmt::print("[DEBUG] Order #{} requested at {}, from origin ({}, {}) to destination "
-//                   "({}, {}):\n",
+//#ifdef DEBUG_INFO_GLOBAL
+//        fmt::print("            +Order {} requested at {}s, from {} to {}, Ts = {}s\n",
 //                   orders_.back().id,
-//                   orders_.back().request_time_date,
-//                   orders_.back().origin.lon,
-//                   orders_.back().origin.lat,
-//                   orders_.back().destination.lon,
-//                   orders_.back().destination.lat);
+//                   orders_.back().request_time_ms / 1000,
+//                   orders_.back().origin.node_id,
+//                   orders_.back().destination.node_id,
+//                   orders_.back().shortest_travel_time_ms / 1000.0 );
+//#endif
+
     }
 
-    return pending_order_ids;
+#ifdef DEBUG_INFO_GLOBAL
+    if (DEBUG_PRINT) {
+        fmt::print("            +Orders new received: {}", requests.size());
+        TIMER_END(t)
+    }
+#endif
+    return new_received_order_ids;
 }
 
-template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::dispatch(
-    const std::vector<size_t> &pending_order_ids) {
-//    fmt::print("[DEBUG] T = {}s: Dispatching {} pending order(s) to vehicles.\n",
-//               system_time_ms_ / 1000.0,
-//               pending_order_ids.size());
-
-    // Assign pending orders to vehicles.
-    assign_orders_through_insertion_heuristics(
-        pending_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
-
-    // Reoptimize the assignments for better level of service.
-    // (TODO)
-
-    // Rebalance empty vehicles.
-    // (TODO)
-
-    return;
-}
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::write_to_datalog() {
+void Platform<RouterFunc, DemandGeneratorFunc>::WriteToDatalog() {
     YAML::Node node;
 
     node["system_time_ms"] = system_time_ms_;
@@ -259,7 +358,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::write_to_datalog() {
         order_node["id"] = order.id;
         order_node["origin"] = std::move(origin_pos_node);
         order_node["destination"] = std::move(destination_pos_node);
-        order_node["status"] = to_string(order.status);
+        order_node["status"] = order_status_to_string(order.status);
         order_node["request_time_ms"] = order.request_time_ms;
         order_node["max_pickup_time_ms"] = order.max_pickup_time_ms;
         order_node["pickup_time_ms"] = order.pickup_time_ms;
@@ -276,8 +375,9 @@ void Platform<RouterFunc, DemandGeneratorFunc>::write_to_datalog() {
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simulation_init_time_date,
-                                                              float total_init_time_s, float total_runtime_s) {
+void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::string simulation_init_time_date,
+                                                             float total_init_time_s,
+                                                             float total_runtime_s) {
     // get the width of the current terminal window
     struct winsize size;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
@@ -292,6 +392,14 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simula
     } else {
         simulation_finish_time_date = ConvertTimeSecondToDate(getTimeStampMs() / 1000);
     }
+
+    int time_consumed_s = total_runtime_s;
+    int time_consumed_min = time_consumed_s / 60;
+    time_consumed_s %= 60;
+    int time_consumed_hour = time_consumed_min / 60;
+    time_consumed_min %= 60;
+    std::string run_time =
+            fmt::format("{}:{:02d}:{:02d}", time_consumed_hour, time_consumed_min, time_consumed_s);
 
     auto sim_start_time_date = platform_config_.simulation_config.simulation_start_time;
     auto sim_end_time_date = ConvertTimeSecondToDate(
@@ -308,27 +416,29 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simula
 
     // Simulation Runtime
     fmt::print("# Simulation Runtime\n");
-    fmt::print("  - Start: {}, End: {}, Epochs: {}\n",
+    fmt::print("  - Start: {}, End: {}, Epochs: {}.\n",
                simulation_init_time_date, simulation_finish_time_date, num_of_epochs);
-    fmt::print("  - Runtime: init_time = {}s, runtime = {}s, runtime_per_epoch = {}s.\n",
-               total_init_time_s, total_runtime_s,total_runtime_s / num_of_epochs);
+    fmt::print("  - Runtime: init_time = {:.2f} s, runtime = {}, runtime_per_epoch = {:.2f} s.\n",
+               total_init_time_s, run_time,total_runtime_s / num_of_epochs);
 
     // Report the platform configurations
     fmt::print("# System Configurations\n");
-    fmt::print("  - From {} to {} (main simulation between {} and {})\n",
+    fmt::print("  - From {} to {} (main simulation between {} and {}).\n",
                sim_start_time_date.substr(11,20), sim_end_time_date.substr(11,20),
                main_sim_start_date.substr(11,20), main_sim_end_date.substr(11,20));
-    fmt::print("  - Fleet Config: size = {}, capacity = {} (interval = {}s)\n",
+    fmt::print("  - Fleet Config: size = {}, capacity = {} (interval = {} s).\n",
                platform_config_.mod_system_config.fleet_config.fleet_size,
                platform_config_.mod_system_config.fleet_config.veh_capacity, cycle_ms_ / 1000);
-    fmt::print("  - Order Config: density = {}, max_wait = {}s ({}+{}+{}={} epochs)\n",
+    fmt::print("  - Order Config: density = {}, max_wait = {} s ({}+{}+{}={} epochs).\n",
                platform_config_.mod_system_config.request_config.request_density,
                platform_config_.mod_system_config.request_config.max_pickup_wait_time_s,
                platform_config_.simulation_config.warmup_duration_s / (cycle_ms_ / 1000),
                platform_config_.simulation_config.simulation_duration_s / (cycle_ms_ / 1000),
                platform_config_.simulation_config.winddown_duration_s / (cycle_ms_ / 1000), num_of_epochs);
-    fmt::print("  - Dispatch Config: dispatcher = {}, rebalancer = {}.\n", "GI", "NR");
-    fmt::print("  - Output Config: video = {}, frame length = {}s, fps = {}, duration = {}s\n",
+    fmt::print("  - Dispatch Config: dispatcher = {}, rebalancer = {}.\n",
+               platform_config_.mod_system_config.dispatch_config.dispatcher,
+               platform_config_.mod_system_config.dispatch_config.rebalancer);
+    fmt::print("  - Video Config: {}, frame_length = {} s, fps = {}, duration = {} s.\n",
                platform_config_.output_config.video_config.render_video,
                frame_length_s, video_fps, video_duration);
 
@@ -339,67 +449,99 @@ void Platform<RouterFunc, DemandGeneratorFunc>::create_report(std::string simula
 
     // Report order status
     auto order_count = 0;
-    auto dispatched_order_count = 0;
-    auto completed_order_count = 0;
-    auto total_wait_time_ms = 0;
-    auto total_travel_time_ms = 0;
+    auto walkaway_order_count = 0;
+    auto complete_order_count = 0;
+    auto onboard_order_count = 0;
+    auto picking_order_count = 0;
+    auto pending_order_count = 0;
+    uint64_t total_wait_time_ms = 0;
+    uint64_t total_delay_time_ms = 0;
+    uint64_t total_order_time_ms = 0;
 
     for (const auto &order : orders_) {
-        if (order.request_time_ms < main_sim_start_time_ms_) {
-            continue;
-        } else if (order.request_time_ms >= main_sim_end_time_ms_) {
-            break;
-        }
-
+        if (order.request_time_ms < main_sim_start_time_ms_) { continue; }
+        if (order.request_time_ms >= main_sim_end_time_ms_) { break; }
         order_count++;
-
         if (order.status == OrderStatus::WALKAWAY) {
-            continue;
-        }
-
-        dispatched_order_count++;
-
-        if (order.status == OrderStatus::DROPPED_OFF) {
-            completed_order_count++;
+            walkaway_order_count++;
+        } else if (order.status == OrderStatus::COMPLETE) {
+            complete_order_count++;
             total_wait_time_ms += order.pickup_time_ms - order.request_time_ms;
-            total_travel_time_ms += order.dropoff_time_ms - order.pickup_time_ms;
+            total_delay_time_ms += order.dropoff_time_ms - (order.request_time_ms + order.shortest_travel_time_ms);
+            total_order_time_ms += order.shortest_travel_time_ms;
+        } else if (order.status == OrderStatus::ONBOARD) {
+            onboard_order_count++;
+        } else if (order.status == OrderStatus::PICKING) {
+            picking_order_count++;
+        } else if (order.status == OrderStatus::PENDING) {
+            pending_order_count++;
         }
     }
 
-    fmt::print("# Orders\n");
-    fmt::print(
-        " - Total Orders: requested = {} (of which {} dispatched [{}%] + {} walked away [{}%]).\n",
-        order_count,
-        dispatched_order_count,
-        100.0 * dispatched_order_count / order_count,
-        order_count - dispatched_order_count,
-        100.0 - 100.0 * dispatched_order_count / order_count);
-    fmt::print(" - Travel Time: completed = {}.", completed_order_count);
-    if (completed_order_count > 0) {
-        fmt::print(" average_wait_time = {}s, average_travel_time = {}s.\n",
-                   total_wait_time_ms / 1000.0 / completed_order_count,
-                   total_travel_time_ms / 1000.0 / completed_order_count);
+    auto service_order_count = complete_order_count + onboard_order_count;
+    assert(service_order_count + picking_order_count + pending_order_count == order_count - walkaway_order_count);
+    fmt::print("# Orders ({}/{})\n", order_count - walkaway_order_count, order_count);
+    fmt::print("  - complete = {} ({:.2f}%), onboard = {} ({:.2f}%), total_service = {} ({:.2f}%).\n",
+               complete_order_count, 100.0 * complete_order_count / order_count,
+               onboard_order_count, 100.0 * onboard_order_count / order_count,
+               service_order_count, 100.0 * service_order_count / order_count);
+    if (picking_order_count + pending_order_count > 0) {
+        fmt::print("  - picking = {} ({:.2f}%), pending = {} ({:.2f}%).\n",
+                   picking_order_count,100.0 * picking_order_count / order_count,
+                   pending_order_count, 100.0 * pending_order_count / order_count);
+    }
+    if (complete_order_count > 0) {
+        fmt::print("  - avg_shortest_travel = {:.2f} s, avg_wait = {:.2f} s, avg_delay = {:.2f} s.\n",
+                   total_order_time_ms / 1000.0 / complete_order_count,
+                   total_wait_time_ms / 1000.0 / complete_order_count,
+                   total_delay_time_ms / 1000.0 / complete_order_count);
     } else {
-        fmt::print(" PLEASE USE LONGER SIMULATION DURATION TO BE ABLE TO COMPLETE ORDERS!\n");
+        fmt::print("  [PLEASE USE LONGER SIMULATION DURATION TO BE ABLE TO COMPLETE ORDERS!]\n");
     }
 
     // Report vehicle status
-    auto total_dist_traveled_mm = 0;
-    auto total_loaded_dist_traveled_mm = 0;
+
+    uint64_t total_dist_traveled_mm = 0;
+    uint64_t total_loaded_dist_traveled_mm = 0;
+    uint32_t total_empty_dist_traveled_mm = 0;
+    uint32_t total_rebl_dist_traveled_mm = 0;
+    uint64_t total_time_traveled_ms = 0;
+    uint64_t total_loaded_time_traveled_ms = 0;
+    uint32_t total_empty_time_traveled_ms = 0;
+    uint32_t total_rebl_time_traveled_ms = 0;
 
     for (const auto &vehicle : vehicles_) {
         total_dist_traveled_mm += vehicle.dist_traveled_mm;
         total_loaded_dist_traveled_mm += vehicle.loaded_dist_traveled_mm;
+        total_empty_dist_traveled_mm += vehicle.empty_dist_traveled_mm;
+        total_rebl_dist_traveled_mm += vehicle.rebl_dist_traveled_mm;
+        total_time_traveled_ms += vehicle.time_traveled_ms;
+        total_loaded_time_traveled_ms += vehicle.loaded_time_traveled_ms;
+        total_empty_time_traveled_ms += vehicle.empty_time_traveled_ms;
+        total_rebl_time_traveled_ms += vehicle.rebl_time_traveled_ms;
     }
 
-    fmt::print("# Vehicles\n");
-    fmt::print(
-        " - Distance: average_distance_traveled = {}m. average_distance_traveled_per_hour = {}m.\n",
-        total_dist_traveled_mm / 1000.0 / vehicles_.size(),
-        total_dist_traveled_mm / vehicles_.size() * 3600.0 /
-            (main_sim_end_time_ms_ - main_sim_start_time_ms_));
-    fmt::print(" - Load: average_load = {}.\n",
-               total_loaded_dist_traveled_mm * 1.0 / total_dist_traveled_mm);
+    auto avg_dist_traveled_km = total_dist_traveled_mm / 1000000.0 / vehicles_.size();
+    auto avg_empty_dist_traveled_km = total_empty_dist_traveled_mm / 1000000.0 / vehicles_.size();
+    auto avg_rebl_dist_traveled_km = total_rebl_dist_traveled_mm / 1000000.0 / vehicles_.size();
+    auto avg_time_traveled_s = total_time_traveled_ms / 1000.0 / vehicles_.size();
+    auto avg_empty_time_traveled_s = total_empty_time_traveled_ms / 1000.0 / vehicles_.size();
+    auto avg_rebl_time_traveled_s = total_rebl_time_traveled_ms / 1000.0 / vehicles_.size();
+    fmt::print("# Vehicles ({})\n", vehicles_.size());
+    fmt::print("  - Service Distance: total_dist = {:.2f} km, avg_dist = {:.2f} km.\n",
+               total_dist_traveled_mm / 1000000.0, avg_dist_traveled_km);
+    fmt::print("  - Service Duration: avg_time = {:.2f} s ({:.2f}% of the main simulation time).\n",
+               avg_time_traveled_s,
+               100.0 * avg_time_traveled_s / platform_config_.simulation_config.simulation_duration_s);
+    fmt::print("  - Empty Travel: avg_time = {:.2f} s ({:.2f}%), avg_dist = {:.2f} km ({:.2f}%).\n",
+               avg_empty_time_traveled_s, 100.0 * avg_empty_time_traveled_s / avg_time_traveled_s,
+               avg_empty_dist_traveled_km, 100.0 * avg_empty_dist_traveled_km / avg_dist_traveled_km);
+    fmt::print("  - Rebl Travel: avg_time = {:.2f} s ({:.2f}%), avg_dist = {:.2f} km ({:.2f}%).\n",
+               avg_rebl_time_traveled_s, 100.0 * avg_rebl_time_traveled_s / avg_time_traveled_s,
+               avg_rebl_dist_traveled_km, 100.0 * avg_rebl_dist_traveled_km / avg_dist_traveled_km);
+    fmt::print("  - Load: average_load_dist = {:.2f}, average_load_time = {:.2f}.\n",
+               total_loaded_dist_traveled_mm * 1.0 / total_dist_traveled_mm,
+               total_loaded_time_traveled_ms * 1.0 / total_time_traveled_ms);
 
     fmt::print("{}\n", dividing_line);
     return;

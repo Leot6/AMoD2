@@ -11,6 +11,7 @@
 #include <iostream>
 
 Router::Router(DataFilePath _date_file_path_config) {
+    TIMER_START(t)
     vehicle_stations_ = LoadNetworkNodesFromCsvFile(
             _date_file_path_config.path_to_vehicle_stations);
     network_nodes_ = LoadNetworkNodesFromCsvFile(
@@ -21,18 +22,19 @@ Router::Router(DataFilePath _date_file_path_config) {
             _date_file_path_config.path_to_mean_travel_time_table);
     travel_distance_table_ = LoadMeanTravelTimeTableFromCsvFile(
             _date_file_path_config.path_to_travel_distance_table);
-    fmt::print("[INFO] Router is ready.\n");
+    fmt::print("[INFO] Router is ready.");
+    TIMER_END(t)
 }
 
-RoutingResponse Router::operator()(const Pos &origin, const Pos &destination, RoutingType type) {
-    RoutingResponse response;
+Route Router::operator()(const Pos &origin, const Pos &destination, RoutingType type) {
+    Route route;
     // onid: origin node id; dnid: destination node id
     auto onid = origin.node_id;
     auto dnid = destination.node_id;
 
     if (type == RoutingType::TIME_ONLY) {
-        response.route.duration_ms = mean_travel_time_table_[onid - 1][dnid - 1] * 1000;
-        response.route.distance_mm = travel_distance_table_[onid - 1][dnid - 1] * 1000;
+        route.duration_ms = mean_travel_time_table_[onid - 1][dnid - 1] * 1000;
+        route.distance_mm = travel_distance_table_[onid - 1][dnid - 1] * 1000;
     }
 
     if (type == RoutingType::FULL_ROUTE) {
@@ -54,9 +56,9 @@ RoutingResponse Router::operator()(const Pos &origin, const Pos &destination, Ro
             step.distance_mm = travel_distance_table_[u - 1][v - 1] * 1000;
             step.duration_ms = mean_travel_time_table_[u - 1][v - 1] * 1000;
             step.poses = {getNodePos(u), getNodePos(v)};
-            response.route.distance_mm += step.distance_mm;
-            response.route.duration_ms += step.duration_ms;
-            response.route.steps.push_back(step);
+            route.distance_mm += step.distance_mm;
+            route.duration_ms += step.duration_ms;
+            route.steps.push_back(step);
         }
 
         // the last step of a leg is always consisting of 2 identical points as a flag of the end of the leg
@@ -65,23 +67,19 @@ RoutingResponse Router::operator()(const Pos &origin, const Pos &destination, Ro
         flag_step.duration_ms = 0;
         flag_step.poses.push_back(getNodePos(dnid));
         flag_step.poses.push_back(getNodePos(dnid));
-        response.route.steps.push_back(flag_step);
+        route.steps.push_back(flag_step);
 
         // check the accuracy of routing
         int deviation_due_to_data_structure = 5;
-        assert(abs(response.route.duration_ms - mean_travel_time_table_[onid - 1][dnid - 1] * 1000)
+        assert(abs(route.duration_ms - mean_travel_time_table_[onid - 1][dnid - 1] * 1000)
                <= deviation_due_to_data_structure);
-        assert(abs(response.route.distance_mm - travel_distance_table_[onid - 1][dnid - 1] * 1000)
+        assert(abs(route.distance_mm - travel_distance_table_[onid - 1][dnid - 1] * 1000)
                <= deviation_due_to_data_structure);
     }
 
-    if (response.route.duration_ms >= 0) {
-        response.status = RoutingStatus::OK;
-    } else {
-        response.status = RoutingStatus::ERROR;
-    }
+    assert(route.duration_ms >= 0);
 
-    return response;
+    return route;
 }
 
 size_t Router::getVehicleStationId(const size_t &station_index) {
@@ -116,8 +114,7 @@ std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv) {
         node.lat = std::stof(data_line[2]);
         all_nodes.push_back(node);
     }
-//    fmt::print("[DEBUG] ({}s) Loaded node data from {}, with {} nodes.\n",
-//               float(getTimeStampMs() - s_time_ms) / 1000, path_to_csv, all_nodes.size());
+
     return std::move(all_nodes);
 }
 
@@ -140,9 +137,7 @@ std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_
         }
         shortest_path_table.push_back(int_row);
     }
-//    fmt::print("[DEBUG] ({}s) Loaded shortest path data from {}, with {} * {} node pairs.\n",
-//               float(getTimeStampMs() - s_time_ms) / 1000, path_to_csv,
-//               shortest_path_table.size(), shortest_path_table[0].size());
+
     return shortest_path_table;
 }
 
@@ -165,8 +160,6 @@ std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string p
         }
         mean_travel_time_table.push_back(float_row);
     }
-//    fmt::print("[DEBUG] ({}s) Loaded shortest path data from {}, with {} * {} node pairs.\n",
-//               float(getTimeStampMs() - s_time_ms) / 1000, path_to_csv,
-//               mean_travel_time_table.size(), mean_travel_time_table[0].size());
+
     return mean_travel_time_table;
 }

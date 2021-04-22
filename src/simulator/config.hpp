@@ -5,6 +5,9 @@
 
 #include "types.hpp"
 
+#define DEBUG_INFO_GLOBAL
+extern bool DEBUG_PRINT;
+
 /// \brief Config that describes the data file path.
 struct DataFilePath {
     std::string path_to_vehicle_stations = "";
@@ -23,6 +26,12 @@ struct AreaConfig {
     float lat_max = 0.0; // min latitude accepted
 };
 
+/// \brief Config that describes the dispatch methods.
+struct DispatchConfig {
+    std::string dispatcher = "GI";       // the method used to assign orders to vehicles
+    std::string rebalancer = "NONE";     // the method used to reposition idle vehicles to high demand area
+};
+
 /// \brief Config that describes the fleet.
 struct FleetConfig {
     size_t fleet_size = 10;  // fleet size
@@ -32,14 +41,16 @@ struct FleetConfig {
 /// \brief Config that describes the requests.
 struct RequestConfig {
     float request_density = 1.0; // the percentage of taxi data considered
-    double max_pickup_wait_time_s = 600; // the max wait time allowed between a request is generated
-                                         // and the traveler is picked up
+    double max_pickup_wait_time_s = 300; // the max wait time allowed between a request is generated
+                                         // and the request is picked up
+    double max_onboard_detour = 1.3;     // the max detour raised by ride-sharing when the request in onboard
 };
 
 /// \brief Config that describes the simulated MoD system.
 struct MoDSystemConfig {
     FleetConfig fleet_config;
     RequestConfig request_config;
+    DispatchConfig dispatch_config;
 };
 
 /// \brief Config that describes the simulation parameters.

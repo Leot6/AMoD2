@@ -6,17 +6,19 @@
 #include "config.hpp"
 #include "types.hpp"
 #include "vehicle.hpp"
-#include "../utility/utility_functions.hpp"
-#include "../utility/tqdm.h"
-#include "../dispatcher/dispatch.hpp"
-
+#include "utility/utility_functions.hpp"
+#include "utility/tqdm.h"
+#include "dispatcher/dispatch_gi.hpp"
+#include "rebalancer/rebalancing_nr.hpp"
 
 #include <chrono>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
 
 /// \brief The agent-based modeling platform that simulates the mobility-on-demand system.
-template <typename RouterFunc, typename DemandGeneratorFunc> class Platform {
+template <typename RouterFunc, typename DemandGeneratorFunc>
+class Platform {
   public:
     /// \brief Constructor.
     explicit Platform(PlatformConfig _platform_config,
@@ -33,26 +35,23 @@ template <typename RouterFunc, typename DemandGeneratorFunc> class Platform {
     Platform &operator=(Platform &&other) = delete;
 
     /// \brief Run simulation. The master function that manages the entire simulation process.
-    void run_simulation(std::string simulation_init_time, float total_init_time_s);
+    void RunSimulation(std::string simulation_init_time, float total_init_time_s);
 
   private:
     /// \brief Run simulation for one cycle. Invoked repetetively by run_simulation().
-    void run_cycle();
+    void RunCycle();
 
     /// \brief Advance all vehicles for the given time and move forward the system time.
-    void advance_vehicles(uint64_t time_ms);
+    void UpdVehiclesPositions(uint64_t time_ms);
 
     /// \brief Generate orders at the end of each cycle.
-    std::vector<size_t> generate_orders();
-
-    /// \brief Dispatch vehicles to serve pending orders.
-    void dispatch(const std::vector<size_t> &pending_order_ids);
+    std::vector<size_t> GenerateOrders();
 
     /// \brief Write the data of the current simulation state to datalog.
-    void write_to_datalog();
+    void WriteToDatalog();
 
     /// \brief Create the report based on the statistical analysis using the simulated data.
-    void create_report(std::string simulation_init_time, float total_init_time_s, float total_runtime_s);
+    void CreateReport(std::string simulation_init_time, float total_init_time_s, float total_runtime_s);
 
     /// \brief The set of config parameters for the simulation platform.
     PlatformConfig platform_config_;
@@ -86,6 +85,12 @@ template <typename RouterFunc, typename DemandGeneratorFunc> class Platform {
 
     /// \brief The vector of vehicles.
     std::vector<Vehicle> vehicles_ = {};
+
+    /// \brief The method used to assign orders to vehicles.
+    DispatcherMethod dispatcher_ = DispatcherMethod::GI;
+
+    /// \brief The method used to reposition idle vehicles.
+    RebalancerMethod rebalancer_ = RebalancerMethod::NONE;
 
     /// \brief The ofstream that outputs to the datalog.
     std::ofstream datalog_ofstream_;

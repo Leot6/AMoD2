@@ -40,7 +40,7 @@ target_link_libraries(test_gitignore mod-abm-lib)
 target_compile_features(test_gitignore PRIVATE cxx_std_17)
 
 # More linking for LibOSRM
-include_directories(SYSTEM)
+include_directories(SYSTEM src)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 ########################################################################
@@ -57,6 +57,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
   GIT_TAG 5.3.0)
 FetchContent_MakeAvailable(fmtlib)
+# At least cmake 3.14.5 is needed to support CMake command "FetchContent_MakeAvailable".
 
 # Add YAML
 FetchContent_Declare(

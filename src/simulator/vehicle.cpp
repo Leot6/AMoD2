@@ -8,7 +8,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-void truncate_step_by_time(Step &step, uint64_t time_ms) {
+void TruncateStepByTime(Step &step, uint64_t time_ms) {
 //    fmt::print("Input step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
 //    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
 //               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
@@ -36,34 +36,17 @@ void truncate_step_by_time(Step &step, uint64_t time_ms) {
     step.distance_mm *= (1 - ratio);
     step.duration_ms -= time_ms;  // we do not use "*= (1 - ratio)" to avoid bug cases, e.g. "11119 / 11120 = 1.0"
 
-//    fmt::print("Output step, t={}, d={}, time_ms={}\n", step.duration_ms, step.distance_mm, time_ms);
-//    fmt::print("step.poses.size({}), poses[0]({} {} {}), poses[1]({} {} {})\n", step.poses.size(),
-//               step.poses[0].node_id, step.poses[0].lon, step.poses[0].lat,
-//               step.poses[1].node_id, step.poses[1].lon, step.poses[1].lat);
-
-//    assert(step.poses.size() == 2 &&
-//           "Output step in truncate_step_by_time() should have 2 poses!");
-//    // sometimes the distance_ms could be less than 1, e.g. 370 * (1-4990/5000) = 0.74
-//    assert(step.distance_mm >= 0 &&
-//           "Output step's distance in truncate_step_by_time() must be positive!");
-//    assert(step.duration_ms > 0 &&
-//           "Output step's duration in truncate_step_by_time() must be positive!");
+    assert(step.poses.size() == 2 &&
+           "Output step in truncate_step_by_time() should have 2 poses!");
+    // normally distance_mm should be larger than 0,
+    // but sometimes the distance_mm could be less than 1 and converted to 0, e.g. 370 * (1-4990/5000) = 0.74 = 0 (int)
+    assert(step.distance_mm >= 0 &&
+           "Output step's distance in truncate_step_by_time() must be positive!");
+    assert(step.duration_ms > 0 &&
+           "Output step's duration in truncate_step_by_time() must be positive!");
 }
 
-void truncate_route_by_time(Route &route, uint64_t time_ms) {
-//    fmt::print("Input route, t={}, d={}, time_ms={}\n", route.duration_ms, route.distance_mm, time_ms);
-//    fmt::print("route.steps.size {}\n", route.steps.size());
-//    auto &steps1 = route.steps;
-//    for (int i = 0; i < steps1.size(); i++) {
-//        fmt::print("[DEBUG] printing step {} ({} poses), t = {}s, d = {}m\n",
-//                   i + 1, steps1[i].poses.size(), (float) steps1[i].duration_ms / 1000,
-//                   (float) steps1[i].distance_mm / 1000);
-//        auto &poses = steps1[i].poses;
-//        fmt::print("      printing pos {} ({}, {}) \n", poses[0].node_id, poses[0].lon, poses[0].lat);
-//        fmt::print("      printing pos {} ({}, {}) \n", poses[1].node_id, poses[1].lon, poses[1].lat);
-//        assert (poses.size() == 2);
-//    }
-
+void TruncateRouteByTime(Route &route, uint64_t time_ms) {
     assert(route.steps.size() >= 2 &&
            "Input route in truncate_route_by_time() must have at least 2 steps!");
     assert(route.distance_mm > 0 &&
@@ -88,7 +71,7 @@ void truncate_route_by_time(Route &route, uint64_t time_ms) {
             continue;
         }
         // If we can not finish this step, truncate the step.
-        truncate_step_by_time(step, time_ms);
+        TruncateStepByTime(step, time_ms);
         route.steps.erase(route.steps.begin(), route.steps.begin() + i);
 
         break;
@@ -110,14 +93,17 @@ void truncate_route_by_time(Route &route, uint64_t time_ms) {
            "Output route's duration in truncate_route_by_time() must be positive!");
 }
 
-void advance_vehicle(Vehicle &vehicle,
+std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehicle,
                      std::vector<Order> &orders,
                      uint64_t system_time_ms,
                      uint64_t time_ms,
-                     bool update_vehicle_stats) {
+                     bool update_vehicle_statistics) {
+    std::vector<size_t> new_picked_order_ids = {};
+    std::vector<size_t> new_dropped_order_ids = {};
+
     // Early return.
     if (time_ms == 0) {
-        return;
+        return {new_picked_order_ids, new_dropped_order_ids};
     }
 
     Step empty_step;
@@ -133,49 +119,67 @@ void advance_vehicle(Vehicle &vehicle,
 
             vehicle.pos = wp.pos;
 
-            if (update_vehicle_stats) {
+            if (update_vehicle_statistics) {
                 vehicle.dist_traveled_mm += wp.route.distance_mm;
                 vehicle.loaded_dist_traveled_mm += wp.route.distance_mm * vehicle.load;
+                vehicle.time_traveled_ms += wp.route.duration_ms;
+                vehicle.loaded_time_traveled_ms += wp.route.duration_ms * vehicle.load;
+                if (vehicle.load == 0) {
+                    vehicle.empty_dist_traveled_mm += wp.route.distance_mm;
+                    vehicle.empty_time_traveled_ms += wp.route.duration_ms;
+                }
             }
 
             if (wp.op == WaypointOp::PICKUP) {
-                assert(vehicle.load < vehicle.capacity &&
-                       "Vehicle's load should never exceed its capacity!");
-
                 orders[wp.order_id].pickup_time_ms = system_time_ms;
-                orders[wp.order_id].status = OrderStatus::PICKED_UP;
+                orders[wp.order_id].status = OrderStatus::ONBOARD;
                 vehicle.load++;
+                new_picked_order_ids.push_back(wp.order_id);
+                assert(vehicle.load <= vehicle.capacity && "Vehicle's load should never exceed its capacity!");
 
-//                fmt::print("[DEBUG] T = {}s: Vehicle #{} picked up Order #{}\n",
-//                           system_time_ms / 1000.0,
-//                           vehicle.id,
-//                           wp.order_id);
+//#ifdef DEBUG_INFO_GLOBAL
+//                fmt::print("            +Vehicle #{} picked up Order #{} at {}s\n",
+//                           vehicle.id, wp.order_id, system_time_ms / 1000.0);
+//#endif
+
             } else if (wp.op == WaypointOp::DROPOFF) {
                 assert(vehicle.load > 0 && "Vehicle's load should not be zero before a dropoff!");
-
                 orders[wp.order_id].dropoff_time_ms = system_time_ms;
-                orders[wp.order_id].status = OrderStatus::DROPPED_OFF;
+                orders[wp.order_id].status = OrderStatus::COMPLETE;
                 vehicle.load--;
+                new_dropped_order_ids.push_back(wp.order_id);
 
-//                fmt::print("[DEBUG] T = {}s: Vehicle #{} droped off Order #{}\n",
-//                           system_time_ms / 1000.0,
-//                           vehicle.id,
-//                           wp.order_id);
+//#ifdef DEBUG_INFO_GLOBAL
+//                fmt::print("            +Vehicle #{} dropped off Order #{} at {}s\n",
+//                           vehicle.id, wp.order_id, system_time_ms / 1000.0);
+//#endif
+
             }
-
             continue;
         }
 
         // If we can not finish this waypoint, truncate the route.
         const auto original_distance_mm = wp.route.distance_mm;
+        const auto original_duration_ms = wp.route.duration_ms;
 
-        truncate_route_by_time(wp.route, time_ms);
+        TruncateRouteByTime(wp.route, time_ms);
         vehicle.pos = wp.route.steps.front().poses.front();
 
-        if (update_vehicle_stats) {
+        if (update_vehicle_statistics) {
             const auto dist_traveled_mm = original_distance_mm - wp.route.distance_mm;
+            const auto time_traveled_ms = original_duration_ms - wp.route.duration_ms;
             vehicle.dist_traveled_mm += dist_traveled_mm;
             vehicle.loaded_dist_traveled_mm += dist_traveled_mm * vehicle.load;
+            vehicle.time_traveled_ms += time_traveled_ms;
+            vehicle.loaded_time_traveled_ms += time_traveled_ms * vehicle.load;
+            if (vehicle.status == VehicleStatus::WORKING && vehicle.load == 0) {
+                vehicle.empty_dist_traveled_mm += dist_traveled_mm;
+                vehicle.empty_time_traveled_ms += time_traveled_ms;
+            }
+            if (vehicle.status == VehicleStatus::REBALANCING) {
+                vehicle.rebl_dist_traveled_mm += dist_traveled_mm;
+                vehicle.rebl_time_traveled_ms += time_traveled_ms;
+            }
         }
 
         vehicle.schedule.erase(vehicle.schedule.begin(), vehicle.schedule.begin() + i);
@@ -186,10 +190,11 @@ void advance_vehicle(Vehicle &vehicle,
             vehicle.step_to_pos = first_step_of_route;
         }
 
-        return;
+        return {new_picked_order_ids, new_dropped_order_ids};
     }
 
     // We've finished the whole schedule.
     vehicle.schedule.clear();
-    return;
+    vehicle.status = VehicleStatus::IDLE;
+    return {new_picked_order_ids, new_dropped_order_ids};
 }

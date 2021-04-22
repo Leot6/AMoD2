@@ -8,25 +8,31 @@ data_file_path:
   shortest_path_table: "/datalog-gitignore/map-data/path-table.csv"
   mean_travel_time_table: "/datalog-gitignore/map-data/mean-table.csv"
   travel_distance_table: "/datalog-gitignore/map-data/dist-table.csv"
-  taxi_data: "/datalog-gitignore/taxi-data/manhattan-taxi-20160525.csv"
+  taxi_data: "/datalog-gitignore/taxi-data/manhattan-taxi-20160525-400k.csv"
 area_config: 
   lon_min: -74.0300
   lon_max: -73.9030
   lat_min: 40.6950
   lat_max: 40.8825
 mod_system_config:
+  dispatch_config:
+    dispatcher: "GI"     # 3 options: GI, SBA, OSP
+    rebalancer: "NR"     # 2 options: NR (naive rebalancer), NONE
   fleet_config:
-    fleet_size: 5
+    fleet_size: 2000
     veh_capacity: 4
   request_config:
-    request_density: 1
-    max_pickup_wait_time_s: 600
+    request_density: 1    # <= 1
+    max_pickup_wait_time_s: 300
+    max_onboard_detour: 1.3
 simulation_config:
   simulation_start_time: "2016-05-25 00:00:00"
   cycle_s: 30
-  warmup_duration_min: 30  # 30min
-  simulation_duration_min: 30  # <= 1371min
-  winddown_duration_min: 39  # 39min
+  warmup_duration_min: 30      # 30 min
+  simulation_duration_min: 120  # <= 1371 min
+  winddown_duration_min: 30    # 39 min
+#  debug_print: true
+  debug_print: false
 output_config:
   datalog_config:
     output_datalog: false
@@ -35,5 +41,5 @@ output_config:
     render_video: false
     path_to_output_video: "/media-gitignore/demo.mp4"
     frames_per_cycle: 3  # frame_length = cycle_s / frames_per_cycle
-    # total frames = simulation_duration_min * 60 / frame_length
-    replay_speed: 300  # fps = replay_speed / frame_length
+                         # total frames = simulation_duration_min * 60 / frame_length
+    replay_speed: 300    # fps = replay_speed / frame_length

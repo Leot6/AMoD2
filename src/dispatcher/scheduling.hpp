@@ -4,8 +4,24 @@
 
 #pragma once
 
-#include "../simulator/types.hpp"
-#include "../utility/utility_functions.hpp"
+#include "simulator/types.hpp"
+#include "utility/utility_functions.hpp"
+
+/// \brief Generate a schedule (consisting of a vector of waypoints) given known pickup and dropoff indices.
+/// \param order The order to be inserted.
+/// \param vehicle The vehicle that serves the order.
+/// \param sub_schedule A feasible schedule of the vehicle.
+/// \param pickup_index The index in the waypoint list where we pick up.
+/// \param dropoff_index The index in the waypoint list where we drop off.
+/// \tparam router_func The router func that finds path between two poses.
+template <typename RouterFunc>
+std::vector<Waypoint> GenerateScheduleFromSubSchedule(const Order &order,
+                                                      const Vehicle &vehicle,
+                                                      const std::vector<Waypoint> &sub_schedule,
+                                                      size_t pickup_index,
+                                                      size_t dropoff_index,
+                                                      RouterFunc &router_func);
+
 
 /// \brief The return type of the following function.
 /// \details If the order could not be inserted based on the current vehicle status, result is false.
@@ -34,20 +50,9 @@ SchedulingResult ComputeScheduleOfInsertingOrderToVehicle(const Order &order,
                                                           RouterFunc &router_func);
 
 
-/// \brief Generate a schedule (consisting of a vector of waypoints) given known pickup and dropoff indices.
-/// \param order The order to be inserted.
-/// \param vehicle The vehicle that serves the order.
-/// \param sub_schedule A feasible schedule of the vehicle.
-/// \param pickup_index The index in the waypoint list where we pick up.
-/// \param dropoff_index The index in the waypoint list where we drop off.
-/// \tparam router_func The router func that finds path between two poses.
+/// \brief Build the detailed route for a vehicle based on its assigned schedule.
 template <typename RouterFunc>
-std::vector<Waypoint> GenerateScheduleFromSubSchedule(const Order &order,
-                                                      const Vehicle &vehicle,
-                                                      const std::vector<Waypoint> &sub_schedule,
-                                                      size_t pickup_index,
-                                                      size_t dropoff_index,
-                                                      RouterFunc &router_func);
+void UpdaVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func);
 
 
 /// \brief Validate schedule by checking all constraints.
@@ -56,10 +61,11 @@ template <typename RouterFunc>
 std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
                                       size_t pickup_idx,
                                       size_t dropoff_idx,
-                                      const Order &order
+                                      const Order &order,
                                       const std::vector<Order> &orders,
                                       const Vehicle &vehicle,
-                                      uint64_t system_time_ms);
+                                      uint64_t system_time_ms,
+                                      RouterFunc &router_func);
 
 
 /// \brief Compute the cost (time in millisecond) of serving the current schedule.

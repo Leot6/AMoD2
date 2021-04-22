@@ -4,9 +4,15 @@
 #include "config.hpp"
 
 #include <fmt/format.h>
+bool DEBUG_PRINT = false;
 
 PlatformConfig load_platform_config(const std::string &path_to_platform_config, const std::string &root_directory) {
     auto platform_config_yaml = YAML::LoadFile(path_to_platform_config);
+
+
+    auto debug_print_string = platform_config_yaml["simulation_config"]["debug_print"].as<std::string>();
+    if (debug_print_string == "true") { DEBUG_PRINT = true; }
+    else if (debug_print_string == "false") { DEBUG_PRINT = false; }
 
     PlatformConfig platform_config;
 
@@ -32,6 +38,11 @@ PlatformConfig load_platform_config(const std::string &path_to_platform_config, 
     platform_config.area_config.lat_max =
             platform_config_yaml["area_config"]["lat_max"].as<float>();
 
+    platform_config.mod_system_config.dispatch_config.dispatcher =
+            platform_config_yaml["mod_system_config"]["dispatch_config"]["dispatcher"].as<std::string>();
+    platform_config.mod_system_config.dispatch_config.rebalancer =
+            platform_config_yaml["mod_system_config"]["dispatch_config"]["rebalancer"].as<std::string>();
+
     platform_config.mod_system_config.fleet_config.fleet_size =
             platform_config_yaml["mod_system_config"]["fleet_config"]["fleet_size"].as<size_t>();
     platform_config.mod_system_config.fleet_config.veh_capacity =
@@ -42,6 +53,9 @@ PlatformConfig load_platform_config(const std::string &path_to_platform_config, 
                     .as<float>();
     platform_config.mod_system_config.request_config.max_pickup_wait_time_s =
             platform_config_yaml["mod_system_config"]["request_config"]["max_pickup_wait_time_s"]
+                    .as<double>();
+    platform_config.mod_system_config.request_config.max_onboard_detour =
+            platform_config_yaml["mod_system_config"]["request_config"]["max_onboard_detour"]
                     .as<double>();
 
     platform_config.simulation_config.simulation_start_time =

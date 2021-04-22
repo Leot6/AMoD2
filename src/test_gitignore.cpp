@@ -7,15 +7,17 @@
 #include "simulator/types.hpp"
 #include "simulator/demand_generator.hpp"
 #include "simulator/router.hpp"
-//#include "utility/utility_functions.hpp"
 
 #include <libc.h>
 
-int test(int & a) {
-    a = 3;
-//    a += 1;
-    std::cout<<"()a "<<a<<std::endl;
-    return a;
+int test(std::vector<int> & list, int delete_item) {
+    for (auto i = 0; i < list.size(); i++) {
+        if (list[i] == delete_item) {
+            list.erase(list.begin() + i);
+            break;
+        }
+    }
+    return 1;
 }
 
 int main(int argc, const char *argv[]) {
@@ -42,23 +44,32 @@ int main(int argc, const char *argv[]) {
     std::cout<<"a的类型是"<<typeid(a).name()<< a <<std::endl;
     assert(a > 10 && "a<=10");
 
-    std::cout<<"b "<<b<<std::endl;
-    b = test(a);
-    std::cout<<"a "<<a<<std::endl;
-    std::cout<<"b "<<b<<std::endl;
 
     std::vector<int> ss = {1, 2, 3, 4};
 
+    std::vector<Waypoint> aa;
 
-    auto sim_s_time = platform_config.simulation_config.simulation_start_time;
-    fmt::print("sim_s_time {}\n", sim_s_time);
-    auto sim_s_time_ms = getTimeStampMs();
-    fmt::print("sim_s_time_ms {}\n", sim_s_time_ms);
+    fmt::print("aa size {}, aa type {}\n", aa.size(), typeid(aa).name());
 
-    size_t cc = 2;
-    fmt::print("cc {}\n", cc);
-    cc++;
-    fmt::print("cc {}\n", cc);
+    std::vector<int> v = {1, 2, 3, 4, 5};
+    fmt::print("v: {}\n", v);
+    test(v, 4);
+    fmt::print("v1: {}\n", v);
+
+    std::vector<std::pair<size_t, std::vector<int>>> rebalancing_candidates;
+//    for (int i = 0; i < 10; i++) {
+//        std::vector<int> cc = {1+i, 3, 5};
+//        rebalancing_candidates.push_back({i, cc});
+//    }
+    fmt::print("rebalancing_candidates: {}\n", rebalancing_candidates);
+    std::sort(rebalancing_candidates.begin(), rebalancing_candidates.end(),
+              [](std::pair<size_t, std::vector<int>> a, std::pair<size_t, std::vector<int>> b) {
+                  return a.second[0] > b.second[0];
+              });
+
+    fmt::print("rebalancing_candidates: {}\n", rebalancing_candidates);
+
+
 
 
 //    PreprocessRequestDate("../datalog-gitignore/taxi-data/manhattan-taxi-20160525");

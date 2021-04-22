@@ -13,18 +13,17 @@
 
 DemandGenerator::DemandGenerator(std::string _path_to_taxi_data, std::string _simulation_start_time,
                                  float _request_density) {
+
+    TIMER_START(t)
     all_requests_ = LoadRequestsFromCsvFile(_path_to_taxi_data);
-//    auto all_request1 = LoadRequestsFromCsvFile_naive_version(_path_to_taxi_data);
-    auto s_time = getTimeStampMs();
     init_request_time_ms_ = ComputeTheAccumulatedSecondsFrom0Clock(_simulation_start_time) * 1000;
     while (all_requests_[init_request_idx_].request_time_ms < init_request_time_ms_){
         init_request_idx_++;
     }
     request_density_ = _request_density;
-//    fmt::print("[DEBUG] ({}s) Calculate the initial request index {} ({}).\n",
-//               float (getTimeStampMs() - s_time)/1000, init_request_idx_, _simulation_start_time);
-    fmt::print("[INFO] Demand Generator is ready.\n");
 
+    fmt::print("[INFO] Demand Generator is ready.");
+    TIMER_END(t)
 }
 
 std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms) {
@@ -39,9 +38,11 @@ std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms)
     size_t new_request_idx = init_request_idx_ + (size_t)(current_request_count_ / request_density_);
     while (all_requests_[new_request_idx].request_time_ms < system_time_ms_ + init_request_time_ms_){
         Request new_request = all_requests_[new_request_idx];
+
 //        fmt::print("[DEBUG] Generated request index {} ({}): origin({}), dest({}).\n",
-//                   new_request_idx - init_request_idx_,new_request.request_time_date,
+//                   new_request_idx - init_request_idx_, new_request.request_time_date,
 //                   new_request.origin_node_id, new_request.destination_node_id);
+
         if (new_request.origin_node_id == 0){
             break;
         }
@@ -52,9 +53,10 @@ std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms)
     return requests;
 }
 
-const std::vector<Request> &DemandGenerator::GetAllRequests() const {
+const std::vector<Request> &DemandGenerator::getAllRequests() const {
     return all_requests_;
 }
+
 
 std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);

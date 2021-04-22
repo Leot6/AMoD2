@@ -8,8 +8,8 @@
 
 #include "types.hpp"
 #include "config.hpp"
-#include "../utility/utility_functions.hpp"
-#include "../utility/csv.hpp"
+#include "utility/utility_functions.hpp"
+#include "utility/csv.hpp"
 
 /// \brief Stateful functor that finds the shortest route for an O/D pair on request.
 class Router {
@@ -18,7 +18,7 @@ class Router {
     explicit Router(DataFilePath _date_file_path_config);
 
     /// \brief Main functor that finds the shortest route for an O/D pair on request.
-    RoutingResponse operator()(const Pos &origin, const Pos &destination, RoutingType type);
+    Route operator()(const Pos &origin, const Pos &destination, RoutingType type);
 
     /// \brief Get the node_id of a station.
     size_t getVehicleStationId(const size_t &station_index);
