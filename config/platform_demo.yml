@@ -19,7 +19,7 @@ mod_system_config:
     dispatcher: "GI"     # 3 options: GI, SBA, OSP
     rebalancer: "NR"     # 2 options: NR (naive rebalancer), NONE
   fleet_config:
-    fleet_size: 2000
+    fleet_size: 10
     veh_capacity: 4
   request_config:
     request_density: 1    # <= 1
@@ -28,9 +28,9 @@ mod_system_config:
 simulation_config:
   simulation_start_time: "2016-05-25 00:00:00"
   cycle_s: 30
-  warmup_duration_min: 30      # 30 min
-  simulation_duration_min: 120  # <= 1371 min
-  winddown_duration_min: 30    # 39 min
+  warmup_duration_min: 0      # 30 min
+  simulation_duration_min: 50  # <= 1371 min
+  winddown_duration_min: 0    # 39 min
 #  debug_print: true
   debug_print: false
 output_config:
@@ -40,6 +40,6 @@ output_config:
   video_config:
     render_video: false
     path_to_output_video: "/media-gitignore/demo.mp4"
-    frames_per_cycle: 3  # frame_length = cycle_s / frames_per_cycle
+    frames_per_cycle: 3  # frame_length = cycle_s / frames_per_cycle (higher frames yields slower speed and longer video)
                          # total frames = simulation_duration_min * 60 / frame_length
-    replay_speed: 300    # fps = replay_speed / frame_length
+    replay_speed: 200    # fps = replay_speed / frame_length (higher speed yields faster speed and shorter video)

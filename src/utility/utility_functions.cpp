@@ -16,7 +16,7 @@ int32_t ConvertTimeDateToSeconds(std::string time_date) {
 }
 
 int32_t ComputeTheAccumulatedSecondsFrom0Clock(std::string time_date) {
-  std::string time_0_clock = time_date.substr(0,10) + "00:00:00";
+  std::string time_0_clock = time_date.substr(0,10) + " 00:00:00";
   int32_t accumulated_sec = ConvertTimeDateToSeconds(time_date) - ConvertTimeDateToSeconds(time_0_clock);
   return accumulated_sec;
 }

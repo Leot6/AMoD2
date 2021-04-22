@@ -8,6 +8,8 @@ import sys
 import os
 import yaml
 import time
+import datetime
+
 
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -21,10 +23,15 @@ def load_config(path_to_config_file):
     with open(path_to_config_file) as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
 
+        if os.path.exists(root_path + config["output_config"]["datalog_config"]["path_to_output_datalog"]):
+            return config
+
         assert(config["output_config"]["datalog_config"]["output_datalog"]
-               and "The output_datalog flag is off! Make sure the simulation is run with output_datalog on in order to be able to render video!")
+               and "The output_datalog flag is off! "
+                   "Make sure the simulation is run with output_datalog on in order to be able to render video!")
         assert(config["output_config"]["video_config"]["render_video"]
-               and "The render_video flag is off! Make sure the simulation is run with render_video on in order to be able to render video!")
+               and "The render_video flag is off! "
+                   "Make sure the simulation is run with render_video on in order to be able to render video!")
 
         return config
 
@@ -106,7 +113,7 @@ def main():
     print("Loaded background map image from {}: width={}, height={}".format(map_image_file_path, w, h))
 
     # Load other data from config.
-    num_frames = int(config["simulation_config"]["simulation_duration_s"] / config["simulation_config"]
+    num_frames = int(config["simulation_config"]["simulation_duration_min"] * 60 / config["simulation_config"]
                      ["cycle_s"]) * config["output_config"]["video_config"]["frames_per_cycle"]
     frame_interval_ms = config["simulation_config"]["cycle_s"] * 1000\
                         / config["output_config"]["video_config"]["frames_per_cycle"]
@@ -116,9 +123,13 @@ def main():
     fps = 1000 / frame_interval_ms * \
           config["output_config"]["video_config"]["replay_speed"]
     viedo_duration = num_frames / fps
-    print("Rendering video of total {} frames (fps:{}, duration:{}s) using datalog from {}".format(
-        num_frames,fps, viedo_duration, path_to_datalog))
-
+    simulation_start_time_date = config["simulation_config"]["simulation_start_time"]
+    time1 = datetime.datetime.strptime(simulation_start_time_date, "%Y-%m-%d %H:%M:%S")
+    simulation_day_date = simulation_start_time_date[0:10] + " 00:00:00"
+    time2 = datetime.datetime.strptime(simulation_day_date, "%Y-%m-%d %H:%M:%S")
+    simulation_start_time_s = int(time.mktime(time1.timetuple()) - time.mktime(time2.timetuple()))
+    print("Rendering video of total {} frames (fps:{}, duration:{}s).\n Using datalog from {} ({})".format(
+        num_frames, fps, viedo_duration, path_to_datalog, simulation_start_time_date))
 
     with open(path_to_datalog) as file:
         # Create the plot.
@@ -139,9 +150,9 @@ def main():
 
         # Also plot the dispatched orders and the walked away orders.
         dispatched_orders = ax.plot(
-            [], [], 'P', color='darkgreen', marker='P', markersize=12, alpha=0.8)[0]
+            [], [], 'P', color='darkgreen', marker='P', markersize=8, alpha=0.8)[0]
         walked_away_orders = ax.plot(
-            [], [], 'X', color='darkred', marker='X', markersize=8, alpha=0.8)[0]
+            [], [], 'X', color='darkred', marker='X', markersize=6, alpha=0.8)[0]
 
         # A text box
         text = ax.text(0.05 * w, 0.05 * h, "text", horizontalalignment='left', verticalalignment='bottom', fontsize=13,
@@ -151,13 +162,13 @@ def main():
             # Get the color of the current vehicle. We only color the first 5 vehicles for visibility.
             color = get_color(id)
             vehs.append(ax.plot([], [], color=color,
-                                marker='o', markersize=8, alpha=1)[0])
+                                marker='o', markersize=5, alpha=1)[0])
             wp0.append(ax.plot([], [], linestyle='-',
-                               linewidth=2, color=color, alpha=0.7)[0])
+                               linewidth=1, color=color, alpha=0.7)[0])
             wp1.append(ax.plot([], [], linestyle='--',
-                               linewidth=2, color=color, alpha=0.7)[0])
+                               linewidth=1, color=color, alpha=0.7)[0])
             wp2.append(ax.plot([], [], linestyle=':',
-                               linewidth=2, color=color, alpha=0.7)[0])
+                               linewidth=1, color=color, alpha=0.7)[0])
 
         def init():
             return vehs, wp0, wp1, wp2, dispatched_orders, walked_away_orders, text
@@ -219,7 +230,7 @@ def main():
 
             if "orders" in frame:
                 for order in frame["orders"]:
-                    if (order["request_time_ms"] >= config["simulation_config"]["warmup_duration_s"] * 1000):
+                    if (order["request_time_ms"] >= config["simulation_config"]["warmup_duration_min"] * 60 * 1000):
                         total_orders_count += 1
 
                         if order["status"] != "WALKAWAY":
@@ -244,8 +255,11 @@ def main():
                 walked_away_orders_xs, walked_away_orders_ys)
 
             # Render text.
-            text_str = "T = {}s\n{} requested orders ({} accepted, {} completed)".format(
-                system_time_ms / 1000.0,
+            min, sec = divmod(simulation_start_time_s + system_time_ms / 1000, 60)
+            hour, min = divmod(min, 60)
+            current_system_time = "%02d:%02d:%02d" % (hour, min, sec)
+            text_str = "T = {}\n{} requested orders ({} accepted, {} completed)".format(
+                current_system_time,
                 total_orders_count,
                 accepted_orders_count,
                 completed_orders_count)
