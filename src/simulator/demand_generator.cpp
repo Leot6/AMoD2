@@ -11,7 +11,8 @@
 #include <assert.h>
 
 
-DemandGenerator::DemandGenerator(std::string _path_to_taxi_data, std::string _simulation_start_time,
+DemandGenerator::DemandGenerator(std::string _path_to_taxi_data,
+                                 std::string _simulation_start_time,
                                  float _request_density) {
 
     TIMER_START(t)
@@ -38,10 +39,13 @@ std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms)
     size_t new_request_idx = init_request_idx_ + (size_t)(current_request_count_ / request_density_);
     while (all_requests_[new_request_idx].request_time_ms < system_time_ms_ + init_request_time_ms_){
         Request new_request = all_requests_[new_request_idx];
+        new_request.request_time_ms -= init_request_time_ms_;
 
-//        fmt::print("[DEBUG] Generated request index {} ({}): origin({}), dest({}).\n",
-//                   new_request_idx - init_request_idx_, new_request.request_time_date,
-//                   new_request.origin_node_id, new_request.destination_node_id);
+//        if (DEBUG_PRINT) {
+//            fmt::print("[DEBUG] Generated request index {} ({}): origin({}), dest({}).\n",
+//                       new_request_idx - init_request_idx_, new_request.request_time_date,
+//                       new_request.origin_node_id, new_request.destination_node_id);
+//        }
 
         if (new_request.origin_node_id == 0){
             break;

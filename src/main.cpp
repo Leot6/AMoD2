@@ -1,7 +1,6 @@
 /// \author Jian Wen
 /// \date 2021/01/29
 
-#include "simulator/config.hpp"
 #include "simulator/router.hpp"
 #include "simulator/demand_generator.hpp"
 #include "simulator/platform.hpp"
@@ -40,7 +39,11 @@ int main(int argc, const char *argv[]) {
     auto platform_config = load_platform_config(path_to_config_file, root_directory);
 
     // Initiate the router.
-    Router router{platform_config.data_file_path};
+    Router router{platform_config.data_file_path.path_to_vehicle_stations,
+                  platform_config.data_file_path.path_to_network_nodes,
+                  platform_config.data_file_path.path_to_shortest_path_table,
+                  platform_config.data_file_path.path_to_mean_travel_time_table,
+                  platform_config.data_file_path.path_to_travel_distance_table};
 
     // Create the demand generator based on the input demand file.
     DemandGenerator demand_generator{platform_config.data_file_path.path_to_taxi_data,

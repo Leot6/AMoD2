@@ -3,17 +3,12 @@
 
 #pragma once
 
-#include "config.hpp"
-#include "types.hpp"
 #include "vehicle.hpp"
-#include "utility/utility_functions.hpp"
 #include "utility/tqdm.h"
 #include "dispatcher/dispatch_gi.hpp"
+#include "dispatcher/dispatch_sba.hpp"
 #include "rebalancer/rebalancing_nr.hpp"
 
-#include <chrono>
-#include <ctime>
-#include <fstream>
 #include <iomanip>
 
 /// \brief The agent-based modeling platform that simulates the mobility-on-demand system.
@@ -81,10 +76,10 @@ class Platform {
     uint64_t system_shutdown_time_ms_ = 0;
 
     /// \brief The vector of orders created during the entire simulation process.
-    std::vector<Order> orders_ = {};
+    std::vector<Order> orders_;
 
     /// \brief The vector of vehicles.
-    std::vector<Vehicle> vehicles_ = {};
+    std::vector<Vehicle> vehicles_;
 
     /// \brief The method used to assign orders to vehicles.
     DispatcherMethod dispatcher_ = DispatcherMethod::GI;

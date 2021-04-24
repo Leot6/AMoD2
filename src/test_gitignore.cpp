@@ -9,6 +9,9 @@
 #include "simulator/router.hpp"
 
 #include <libc.h>
+#include "gurobi_c++.h"
+
+using namespace std;
 
 int test(std::vector<int> & list, int delete_item) {
     for (auto i = 0; i < list.size(); i++) {
@@ -30,58 +33,51 @@ int main(int argc, const char *argv[]) {
     auto path_to_config_file = root_directory + "/config/platform_demo.yml";
     auto platform_config = load_platform_config(path_to_config_file, root_directory);
 
-//    // Create the demand generator based on the input demand file.
-//    DemandGenerator demand_generator{platform_config.data_file_path.path_to_taxi_data,
-//                                     platform_config.simulation_config.simulation_start_time,
-//                                     platform_config.mod_system_config.request_config.request_density};
-
-//    auto request_data = LoadRequestsFromCsvFile(path + platform_config.data_file_path.path_to_taxi_data);
-
-    int32_t a = 0;
-    std::cout<<"a的类型是"<<typeid(a).name()<<std::endl;
-    float b = 3.2;
-    a = b * 100;
-    std::cout<<"a的类型是"<<typeid(a).name()<< a <<std::endl;
-    assert(a > 10 && "a<=10");
 
 
-    std::vector<int> ss = {1, 2, 3, 4};
+    try {
 
-    std::vector<Waypoint> aa;
+        // Create an environment
+        GRBEnv env = GRBEnv(true);
+        env.set("LogFile", "mip1.log");
+        env.start();
 
-    fmt::print("aa size {}, aa type {}\n", aa.size(), typeid(aa).name());
+        // Create an empty model
+        GRBModel model = GRBModel(env);
 
-    std::vector<int> v = {1, 2, 3, 4, 5};
-    fmt::print("v: {}\n", v);
-    test(v, 4);
-    fmt::print("v1: {}\n", v);
+        // Create variables
+        GRBVar x = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "x");
+        GRBVar y = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "y");
+        GRBVar z = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "z");
 
-    std::vector<std::pair<size_t, std::vector<int>>> rebalancing_candidates;
-//    for (int i = 0; i < 10; i++) {
-//        std::vector<int> cc = {1+i, 3, 5};
-//        rebalancing_candidates.push_back({i, cc});
-//    }
-    fmt::print("rebalancing_candidates: {}\n", rebalancing_candidates);
-    std::sort(rebalancing_candidates.begin(), rebalancing_candidates.end(),
-              [](std::pair<size_t, std::vector<int>> a, std::pair<size_t, std::vector<int>> b) {
-                  return a.second[0] > b.second[0];
-              });
+        // Set objective: maximize x + y + 2 z
+        model.setObjective(x + y + 2 * z, GRB_MAXIMIZE);
 
-    fmt::print("rebalancing_candidates: {}\n", rebalancing_candidates);
+        // Add constraint: x + 2 y + 3 z <= 4
+        model.addConstr(x + 2 * y + 3 * z <= 4, "c0");
 
+        // Add constraint: x + y >= 1
+        model.addConstr(x + y >= 1, "c1");
 
+        // Optimize model
+        model.optimize();
 
+        cout << x.get(GRB_StringAttr_VarName) << " "
+             << x.get(GRB_DoubleAttr_X) << endl;
+        cout << y.get(GRB_StringAttr_VarName) << " "
+             << y.get(GRB_DoubleAttr_X) << endl;
+        cout << z.get(GRB_StringAttr_VarName) << " "
+             << z.get(GRB_DoubleAttr_X) << endl;
 
-//    PreprocessRequestDate("../datalog-gitignore/taxi-data/manhattan-taxi-20160525");
-//    PreprocessNodeDate("../datalog-gitignore/map-data/stations-101");
-//    PreprocessNodeDate("../datalog-gitignore/map-data/nodes");
-//    PreprocessShortestPathDate("../datalog-gitignore/map-data/path-table");
-//    PreprocessMeanTravelTimeDate("../datalog-gitignore/map-data/mean-table");
-//    PreprocessMeanTravelTimeDate("../datalog-gitignore/map-data/dist-table");
+        cout << "Obj: " << model.get(GRB_DoubleAttr_ObjVal) << endl;
 
-//    std::string a = "test";
-//    fmt::print("a is {}\n", a);
-//    std::string b = std::move(a);
-//    fmt::print("a is {}\n", a);
+    } catch(GRBException e) {
+        cout << "Error code = " << e.getErrorCode() << endl;
+        cout << e.getMessage() << endl;
+    } catch(...) {
+        cout << "Exception during optimization" << endl;
+    }
+
+    return 0;
 
 }

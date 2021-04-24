@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include "simulator/types.hpp"
-#include "utility/utility_functions.hpp"
 #include "scheduling.hpp"
 #include <cstddef>
 

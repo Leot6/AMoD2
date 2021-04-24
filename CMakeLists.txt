@@ -10,12 +10,19 @@ project(
   DESCRIPTION "An agent-based modeling platform for mobility-on-demand simulations"
   LANGUAGES CXX)
 
+include_directories(SYSTEM src)
+
 ########################################################################
 # Find External Packages
 ########################################################################
 
 # Define the path to cmake files
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Define the path to gurobi library (Mac OS)
+set(GUROBI_DIR /Library/gurobi911/mac64)    # if Gurobi directory/version is different, manually change this line and "gurobi91" in line 38
+include_directories(${GUROBI_DIR}/include)  # path to: "gurobi_c++.h"
+link_directories(${GUROBI_DIR}/lib)         # path to: the Gurobi C++ library "libgurobi_c++.a" and the Gurobi C library "libgurobi91.dylib"
 
 # Find all required libraries
 find_package(Boost 1.52.0 COMPONENTS filesystem system thread iostreams chrono date_time regex REQUIRED)
@@ -26,8 +33,9 @@ find_package(Boost 1.52.0 COMPONENTS filesystem system thread iostreams chrono d
 
 # The libraries
 add_library(mod-abm-lib src/simulator/config.cpp src/simulator/demand_generator.cpp src/simulator/router.cpp
-        src/simulator/vehicle.cpp src/utility/utility_functions.cpp)
-target_link_libraries(mod-abm-lib yaml-cpp fmt::fmt ${Python3_INCLUDE_DIRS})
+        src/simulator/vehicle.cpp src/utility/utility_functions.cpp src/dispatcher/scheduling.cpp
+        src/dispatcher/ilp_assign.cpp)
+target_link_libraries(mod-abm-lib yaml-cpp fmt::fmt gurobi_c++ gurobi91)
 target_compile_features(mod-abm-lib PRIVATE cxx_std_17)
 
 # The executable
@@ -38,10 +46,6 @@ target_compile_features(main PRIVATE cxx_std_17)
 add_executable(test_gitignore src/test_gitignore.cpp)
 target_link_libraries(test_gitignore mod-abm-lib)
 target_compile_features(test_gitignore PRIVATE cxx_std_17)
-
-# More linking for LibOSRM
-include_directories(SYSTEM src)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 ########################################################################
 # Fetch Other Third-Party Libraries

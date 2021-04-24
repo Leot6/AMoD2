@@ -3,7 +3,6 @@
 
 #pragma once
 #include "types.hpp"
-#include "config.hpp"
 
 #undef NDEBUG
 #include <assert.h>

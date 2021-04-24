@@ -49,7 +49,7 @@ void CheckFileExistence(const std::string& path_to_file) {
     }
 }
 
-void SchedulePrinter(const Vehicle &vehicle, const std::vector<Waypoint> &schedule) {
+void PrintSchedule(const Vehicle &vehicle, const std::vector<Waypoint> &schedule) {
     fmt::print("[DEBUG] Vehicle #{} ({}) schedule ([node_id, pod, order_id]):",
                vehicle_status_to_string(vehicle.status), vehicle.id);
     for (const auto &wp : schedule) {

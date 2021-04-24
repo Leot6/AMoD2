@@ -3,13 +3,11 @@
 
 #pragma once
 
-#include "types.hpp"
 #include "utility/utility_functions.hpp"
 #include "utility/csv.hpp"
 
 #include <cstdint>
 #include <memory>
-#include <string>
 
 /// \brief Stateful functor that generates orders based on demand data.
 class DemandGenerator {
@@ -29,7 +27,7 @@ private:
     uint64_t system_time_ms_ = 0;
 
     /// \brief The real taxi trip data loaded from a csv file.
-    std::vector<Request> all_requests_ = {};
+    std::vector<Request> all_requests_;
 
     /// \brief The init request start time, determined by the simulation time.
     uint64_t init_request_time_ms_ = 0;

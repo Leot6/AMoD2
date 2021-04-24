@@ -14,8 +14,7 @@
 /// \param vehicles A vector of all vehicles.
 /// \tparam router_func The router func that finds path between two poses.
 template <typename RouterFunc>
-void RepositionIdleVehicleThroughNaiveRebalancer(const std::vector<size_t> &new_received_order_ids,
-                                                 const std::vector<Order> &orders,
+void RepositionIdleVehicleThroughNaiveRebalancer(const std::vector<Order> &orders,
                                                  std::vector<Vehicle> &vehicles,
                                                  RouterFunc &router_func);
 

@@ -7,14 +7,11 @@
 #include "simulator/types.hpp"
 
 #include <sys/stat.h>
-#include <fmt/format.h>
-#include <fmt/ranges.h>
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <string>
 #include <ctime>
 #include <chrono>
 
@@ -38,7 +35,7 @@ std::time_t getTimeStampMs();
 void CheckFileExistence(const std::string &path_to_file);
 
 /// \brief A function to print the schedule in terminal.
-void SchedulePrinter(const Vehicle &vehicle, const std::vector<Waypoint> &schedule);
+void PrintSchedule(const Vehicle &vehicle, const std::vector<Waypoint> &schedule);
 
 /////// \brief A function saving data to a csv file.
 //void saveTwoDimentionArr2csv(std::vector<std::vector<float>> &arr, int row, int col, char*filename);

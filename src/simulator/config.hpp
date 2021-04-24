@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "types.hpp"
+#include <yaml-cpp/yaml.h>
+#include <string>
 
-#define DEBUG_INFO_GLOBAL
 extern bool DEBUG_PRINT;
 
 /// \brief Config that describes the data file path.

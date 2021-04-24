@@ -131,30 +131,38 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
             }
 
             if (wp.op == WaypointOp::PICKUP) {
+                assert(vehicle.load < vehicle.capacity && "Vehicle's load should be less than its capacity before a pickup!");
                 orders[wp.order_id].pickup_time_ms = system_time_ms;
                 orders[wp.order_id].status = OrderStatus::ONBOARD;
                 vehicle.load++;
+                vehicle.onboard_order_ids.push_back(wp.order_id);
                 new_picked_order_ids.push_back(wp.order_id);
-                assert(vehicle.load <= vehicle.capacity && "Vehicle's load should never exceed its capacity!");
 
-//#ifdef DEBUG_INFO_GLOBAL
-//                fmt::print("            +Vehicle #{} picked up Order #{} at {}s\n",
-//                           vehicle.id, wp.order_id, system_time_ms / 1000.0);
-//#endif
+//                if (DEBUG_PRINT){
+//                    fmt::print("            +Vehicle #{} picked up Order #{} at {}s\n",
+//                               vehicle.id, wp.order_id, system_time_ms / 1000.0);
+//                }
 
             } else if (wp.op == WaypointOp::DROPOFF) {
                 assert(vehicle.load > 0 && "Vehicle's load should not be zero before a dropoff!");
                 orders[wp.order_id].dropoff_time_ms = system_time_ms;
                 orders[wp.order_id].status = OrderStatus::COMPLETE;
                 vehicle.load--;
+                for (auto i = 0; i < vehicle.onboard_order_ids.size(); i++) {
+                    if (vehicle.onboard_order_ids[i] == wp.order_id) {
+                        vehicle.onboard_order_ids.erase(vehicle.onboard_order_ids.begin() + i);
+                        break;
+                    }
+                }
                 new_dropped_order_ids.push_back(wp.order_id);
 
-//#ifdef DEBUG_INFO_GLOBAL
-//                fmt::print("            +Vehicle #{} dropped off Order #{} at {}s\n",
-//                           vehicle.id, wp.order_id, system_time_ms / 1000.0);
-//#endif
+//                if (DEBUG_PRINT){
+//                    fmt::print("            +Vehicle #{} dropped off Order #{} at {}s\n",
+//                               vehicle.id, wp.order_id, system_time_ms / 1000.0);
+//                }
 
             }
+            assert(vehicle.load == vehicle.onboard_order_ids.size());
             continue;
         }
 

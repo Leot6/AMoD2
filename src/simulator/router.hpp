@@ -4,10 +4,7 @@
 #pragma once
 
 #include <memory>
-#include <string>
 
-#include "types.hpp"
-#include "config.hpp"
 #include "utility/utility_functions.hpp"
 #include "utility/csv.hpp"
 
@@ -15,7 +12,11 @@
 class Router {
   public:
     /// \brief Constructor.
-    explicit Router(DataFilePath _date_file_path_config);
+    explicit Router(std::string _path_to_vehicle_stations,
+                    std::string _path_to_network_nodes,
+                    std::string _path_to_shortest_path_table,
+                    std::string _path_to_mean_travel_time_table,
+                    std::string _path_to_travel_distance_table);
 
     /// \brief Main functor that finds the shortest route for an O/D pair on request.
     Route operator()(const Pos &origin, const Pos &destination, RoutingType type);

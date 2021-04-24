@@ -29,13 +29,6 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         vehicles_.push_back(vehicle);
     }
 
-//#ifdef DEBUG_INFO_GLOBAL
-//    fmt::print("[DEBUG] Check vehicles initial positions\n");
-//    for (const auto &vehicle : vehicles_) {
-//        fmt::print(" -vehicle {} at station {}\n", vehicle.id, vehicle.pos.node_id);
-//    }
-//#endif
-
     // Initialize the simulation times.
     system_time_ms_ = 0;
     cycle_ms_ = static_cast<uint64_t>(platform_config_.simulation_config.cycle_s * 1000);
@@ -118,7 +111,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunSimulation(std::string simula
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
-#ifdef DEBUG_INFO_GLOBAL
     TIMER_START(t)
     if (DEBUG_PRINT) {
         fmt::print("[DEBUG] T = {}s: Epoch {}/{} is running.\n",
@@ -126,7 +118,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
                    (system_time_ms_ + cycle_ms_) / cycle_ms_,
                    system_shutdown_time_ms_ / cycle_ms_);
     }
-#endif
 
     // 1. Update the vehicles' positions and the orders' statuses.
     if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
@@ -145,7 +136,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
     for (auto &order : orders_) {
         if (order.status != OrderStatus::PENDING) { continue; }
         // Reject the long waited orders.
-        if (order.request_time_ms + 1500 <= system_time_ms_ || order.max_pickup_time_ms <= system_time_ms_) {
+        if (order.request_time_ms + 150000 <= system_time_ms_ || order.max_pickup_time_ms <= system_time_ms_) {
             order.status = OrderStatus::WALKAWAY;
         }
     }
@@ -156,11 +147,22 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
     // 3. Assign pending orders to vehicles.
     if (dispatcher_ == DispatcherMethod::GI) {
         AssignOrdersThroughGreedyInsertion(new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
+    } else if (dispatcher_ == DispatcherMethod::SBA) {
+        AssignOrdersThroughSingleRequestBatchAssign(
+                new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
     }
+
+    // code maintained for dispatch_osp
+//    auto num_of_assignable_orders = 0;
+//    for (const auto &order : orders) {
+//        if (order.status == OrderStatus::PENDING || order.status == OrderStatus::PICKING) {
+//            num_of_assignable_orders++;
+//        }
+//    }
 
     // 4. Reposition idle vehicles to high demand areas.
     if (rebalancer_ == RebalancerMethod::NR) {
-        RepositionIdleVehicleThroughNaiveRebalancer(new_received_order_ids, orders_, vehicles_, router_func_);
+        RepositionIdleVehicleThroughNaiveRebalancer(orders_, vehicles_, router_func_);
     }
 
     // 5. Write the datalog to file.
@@ -169,7 +171,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
         WriteToDatalog();
     }
 
-#ifdef DEBUG_INFO_GLOBAL
     if (DEBUG_PRINT) {
         auto num_of_total_orders = orders_.size();
         auto num_of_complete_orders = 0, num_of_onboard_orders = 0, num_of_picking_orders = 0,
@@ -199,7 +200,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
         TIMER_END(t)
         fmt::print("\n");
     }
-#endif
 
     return;
 }
@@ -207,12 +207,10 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::UpdVehiclesPositions(uint64_t time_ms) {
 
-#ifdef DEBUG_INFO_GLOBAL
     TIMER_START(t)
     if (DEBUG_PRINT) {
         fmt::print("        -Updating vehicles positions and orders statues by {}s...\n", time_ms / 1000);
     }
-#endif
 
     auto num_of_picked_orders = 0;
     auto num_of_dropped_orders = 0;
@@ -233,7 +231,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::UpdVehiclesPositions(uint64_t ti
     // Increment the system time.
     system_time_ms_ += time_ms;
 
-#ifdef DEBUG_INFO_GLOBAL
     if (DEBUG_PRINT) {
         int num_of_idle_vehicles = 0;
         int num_of_rebalancing_vehicles = 0;
@@ -247,19 +244,16 @@ void Platform<RouterFunc, DemandGeneratorFunc>::UpdVehiclesPositions(uint64_t ti
                    num_of_idle_vehicles, vehicles_.size(), num_of_rebalancing_vehicles, vehicles_.size());
         TIMER_END(t)
     }
-#endif
 
     return;
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
 std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::GenerateOrders() {
-#ifdef DEBUG_INFO_GLOBAL
     TIMER_START(t)
     if (DEBUG_PRINT) {
         fmt::print("        -Loading new orders...\n");
     }
-#endif
 
     // Get order requests generated during the past cycle.
     auto requests = demand_generator_func_(system_time_ms_);
@@ -290,23 +284,23 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::GenerateOrders() 
         new_received_order_ids.push_back(orders_.size());
         orders_.push_back(std::move(order));
 
-//#ifdef DEBUG_INFO_GLOBAL
-//        fmt::print("            +Order {} requested at {}s, from {} to {}, Ts = {}s\n",
-//                   orders_.back().id,
-//                   orders_.back().request_time_ms / 1000,
-//                   orders_.back().origin.node_id,
-//                   orders_.back().destination.node_id,
-//                   orders_.back().shortest_travel_time_ms / 1000.0 );
-//#endif
+//        if (DEBUG_PRINT) {
+//            fmt::print("            +Order {} requested at {}s ({}), from {} to {}, Ts = {}s\n",
+//                       orders_.back().id,
+//                       orders_.back().request_time_ms / 1000,
+//                       orders_.back().request_time_date,
+//                       orders_.back().origin.node_id,
+//                       orders_.back().destination.node_id,
+//                       orders_.back().shortest_travel_time_ms / 1000.0 );
+//        }
 
     }
 
-#ifdef DEBUG_INFO_GLOBAL
     if (DEBUG_PRINT) {
         fmt::print("            +Orders new received: {}", requests.size());
         TIMER_END(t)
     }
-#endif
+
     return new_received_order_ids;
 }
 
