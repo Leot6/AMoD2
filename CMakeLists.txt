@@ -10,19 +10,33 @@ project(
   DESCRIPTION "An agent-based modeling platform for mobility-on-demand simulations"
   LANGUAGES CXX)
 
-include_directories(SYSTEM src)
-
 ########################################################################
 # Find External Packages
 ########################################################################
+if (CMAKE_HOST_APPLE)
+    set(MACOS 1)
+elseif (CMAKE_HOST_UNIX)
+    set(LINUX 1)
+endif ()
 
 # Define the path to cmake files
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Define the path to gurobi library (Mac OS)
-set(GUROBI_DIR /Library/gurobi911/mac64)    # if Gurobi directory/version is different, manually change this line and "gurobi91" in line 38
-include_directories(${GUROBI_DIR}/include)  # path to: "gurobi_c++.h"
-link_directories(${GUROBI_DIR}/lib)         # path to: the Gurobi C++ library "libgurobi_c++.a" and the Gurobi C library "libgurobi91.dylib"
+# Define the path to gurobi library
+# if Gurobi directory/version is different, manually change the directory to Gurobi in set(GUROBI_DIR ...) (line 30/33)
+# and term "gurobi91" in target_link_libraries(mod-abm-lib ... gurobi91) (line 53).
+if (MACOS)
+    MESSAGE(STATUS "operation system is MacOs (${CMAKE_SYSTEM})")
+    set(GUROBI_DIR /Library/gurobi911/mac64)
+elseif (LINUX)
+    MESSAGE(STATUS "operation system is Linux (${CMAKE_SYSTEM})")
+    set(GUROBI_DIR /Library/gurobi911/linux64)
+endif ()
+    # path to: "gurobi_c++.h"
+include_directories(${GUROBI_DIR}/include)
+    # path to: the Gurobi C++ library "libgurobi_c++.a"
+    # and the Gurobi C library "libgurobi91.dylib(Mac OS) / libgurobi91.so(Linux)"
+link_directories(${GUROBI_DIR}/lib)
 
 # Find all required libraries
 find_package(Boost 1.52.0 COMPONENTS filesystem system thread iostreams chrono date_time regex REQUIRED)
@@ -30,6 +44,7 @@ find_package(Boost 1.52.0 COMPONENTS filesystem system thread iostreams chrono d
 ########################################################################
 # Define Libraries and Executable
 ########################################################################
+include_directories(SYSTEM src)
 
 # The libraries
 add_library(mod-abm-lib src/simulator/config.cpp src/simulator/demand_generator.cpp src/simulator/router.cpp
@@ -61,7 +76,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
   GIT_TAG 5.3.0)
 FetchContent_MakeAvailable(fmtlib)
-# At least cmake 3.14.5 is needed to support CMake command "FetchContent_MakeAvailable".
+    # At least cmake 3.11.0 (sometimes the error message says 3.14.5) is needed to support CMake command "FetchContent_MakeAvailable".
 
 # Add YAML
 FetchContent_Declare(
