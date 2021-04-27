@@ -11,6 +11,8 @@
 #include <libc.h>
 #include "gurobi_c++.h"
 
+#include <numeric>
+
 using namespace std;
 
 int test(std::vector<int> & list, int delete_item) {
@@ -33,43 +35,47 @@ int main(int argc, const char *argv[]) {
     auto path_to_config_file = root_directory + "/config/platform_demo.yml";
     auto platform_config = load_platform_config(path_to_config_file, root_directory);
 
-
-
     try {
 
         // Create an environment
         GRBEnv env = GRBEnv(true);
-        env.set("LogFile", "mip1.log");
+        env.set("LogToConsole", "0");
         env.start();
 
         // Create an empty model
         GRBModel model = GRBModel(env);
 
+
         // Create variables
-        GRBVar x = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "x");
-        GRBVar y = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "y");
-        GRBVar z = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "z");
+        // (lower_bound, upper_bounds, objective_coefficient (zero here and set later), variable_type, name)
+        std::vector<GRBVar> v_t;
+        for (auto i = 0; i < 3; i++) {
+            v_t.push_back(model.addVar(0.0, 1.0, 0.0, GRB_BINARY, fmt::format("vt_{}", i)));
+        }
 
         // Set objective: maximize x + y + 2 z
-        model.setObjective(x + y + 2 * z, GRB_MAXIMIZE);
+        std::vector<int> obj_c = {1, 1, 2};  // objective_coefficients
+        GRBLinExpr obj = 0.0;
+        for (auto i = 0; i < obj_c.size(); i++) {
+            obj += obj_c[i] * v_t[i];
+        }
+        model.setObjective(obj, GRB_MAXIMIZE);
 
-        // Add constraint: x + 2 y + 3 z <= 4
-        model.addConstr(x + 2 * y + 3 * z <= 4, "c0");
+        // Add constraint for vehicles
+        std::vector<GRBLinExpr> c_v;
+        c_v.push_back(v_t[0] + 2 * v_t[1] + 3 * v_t[2]);
+        c_v.push_back(v_t[0] + v_t[1]);
+        model.addConstr(c_v[0] <= 4);
+        model.addConstr(c_v[1] >= 1);
 
-        // Add constraint: x + y >= 1
-        model.addConstr(x + y >= 1, "c1");
 
         // Optimize model
         model.optimize();
+        for (const auto & var : v_t) {
+            fmt::print("{} {}\n", var.get(GRB_StringAttr_VarName), var.get(GRB_DoubleAttr_X));
+        }
+        fmt::print("Obj: {}\n", model.get(GRB_DoubleAttr_ObjVal));
 
-        cout << x.get(GRB_StringAttr_VarName) << " "
-             << x.get(GRB_DoubleAttr_X) << endl;
-        cout << y.get(GRB_StringAttr_VarName) << " "
-             << y.get(GRB_DoubleAttr_X) << endl;
-        cout << z.get(GRB_StringAttr_VarName) << " "
-             << z.get(GRB_DoubleAttr_X) << endl;
-
-        cout << "Obj: " << model.get(GRB_DoubleAttr_ObjVal) << endl;
 
     } catch(GRBException e) {
         cout << "Error code = " << e.getErrorCode() << endl;

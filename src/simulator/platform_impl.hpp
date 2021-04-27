@@ -150,15 +150,11 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
     } else if (dispatcher_ == DispatcherMethod::SBA) {
         AssignOrdersThroughSingleRequestBatchAssign(
                 new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
+    } else if (dispatcher_ == DispatcherMethod::OSP) {
+        AssignOrdersThroughOptimalSchedulePoolAssign(
+                new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
     }
 
-    // code maintained for dispatch_osp
-//    auto num_of_assignable_orders = 0;
-//    for (const auto &order : orders) {
-//        if (order.status == OrderStatus::PENDING || order.status == OrderStatus::PICKING) {
-//            num_of_assignable_orders++;
-//        }
-//    }
 
     // 4. Reposition idle vehicles to high demand areas.
     if (rebalancer_ == RebalancerMethod::NR) {
@@ -172,6 +168,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
     }
 
     if (DEBUG_PRINT) {
+        // 6. Check the statuses of orders and no one is assigned to multiple vehicles.
         auto num_of_total_orders = orders_.size();
         auto num_of_complete_orders = 0, num_of_onboard_orders = 0, num_of_picking_orders = 0,
                 num_of_pending_orders = 0, num_of_walkaway_orders = 0;
@@ -190,6 +187,23 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
         }
         assert(num_of_total_orders == num_of_complete_orders + num_of_onboard_orders + num_of_picking_orders
                                       + num_of_pending_orders + num_of_walkaway_orders);
+        auto num_of_onboard_orders_from_vehicle_schedule = 0, num_of_picking_orders_from_vehicle_schedule = 0;
+        auto num_of_dropping_orders_from_vehicle_schedule = 0;
+        for (const auto &vehicle : vehicles_) {
+            num_of_onboard_orders_from_vehicle_schedule += vehicle.onboard_order_ids.size();
+            for (const auto &wp : vehicle.schedule) {
+                if (wp.op == WaypointOp::PICKUP) { num_of_picking_orders_from_vehicle_schedule += 1; }
+                if (wp.op == WaypointOp::DROPOFF) { num_of_dropping_orders_from_vehicle_schedule += 1; }
+            }
+        }
+        assert(num_of_onboard_orders_from_vehicle_schedule + num_of_picking_orders_from_vehicle_schedule
+               == num_of_dropping_orders_from_vehicle_schedule);
+//        fmt::print("num_of_picking_orders {} - {}\n",
+//                   num_of_picking_orders,
+//                   num_of_picking_orders_from_vehicle_schedule);
+        assert(num_of_picking_orders == num_of_picking_orders_from_vehicle_schedule);
+        assert(num_of_onboard_orders == num_of_onboard_orders_from_vehicle_schedule);
+
         fmt::print("        T = {}s: Epoch {}/{} has finished. Total orders received = {}, of which {} complete "
                    "+ {} onboard + {} picking + {} pending + {} walkaway",
                    (system_time_ms_) / 1000.0,
@@ -282,6 +296,7 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::GenerateOrders() 
                          order.max_pickup_time_ms - order.request_time_ms
                          + static_cast<int32_t>(order.shortest_travel_time_ms * (max_detour - 1)));
         new_received_order_ids.push_back(orders_.size());
+        assert(order.status == OrderStatus::PENDING);
         orders_.push_back(std::move(order));
 
 //        if (DEBUG_PRINT) {

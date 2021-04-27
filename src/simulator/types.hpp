@@ -154,6 +154,7 @@ struct Vehicle {
     size_t id;
     Pos pos;
     VehicleStatus status = VehicleStatus::IDLE;
+    bool schedule_is_updated_at_current_epoch = false; // false at the start of each epoch, true if vehicle's schedule is rebuilt
     Step step_to_pos;
     size_t capacity = 1;
     size_t load = 0;

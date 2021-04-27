@@ -14,8 +14,9 @@ struct SchedulingResult {
     size_t vehicle_id;
     std::vector<std::vector<Waypoint>> feasible_schedules;
     size_t best_schedule_idx;
-    uint64_t best_schedule_cost_ms = std::numeric_limits<uint64_t>::max();
+    uint32_t best_schedule_cost_ms = std::numeric_limits<uint32_t>::max();
 };
+
 /// \brief Compute all feasible schedules for a vehicle to serve a order.
 /// (schedules of a ride-sharing trip T of size k are computed based on schedules of its subtrip of size k-1)
 /// \see get_cost_of_schedule has the detialed definition of cost.
@@ -61,9 +62,9 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
                                       uint64_t system_time_ms,
                                       RouterFunc &router_func);
 
-/// \brief Build the detailed route for a vehicle based on its assigned schedule.
+/// \brief Build the detailed route for a vehicle based on its assigned schedule, and update the vehicle's status.
 template <typename RouterFunc>
-void UpdaVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func);
+void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func);
 
 
 /// \brief Quick check if a order is obviously cannot served by a vehicle.

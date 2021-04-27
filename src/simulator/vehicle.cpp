@@ -108,6 +108,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
 
     Step empty_step;
     vehicle.step_to_pos = empty_step;
+    vehicle.schedule_is_updated_at_current_epoch = false;
 
     for (auto i = 0; i < vehicle.schedule.size(); i++) {
         auto &wp = vehicle.schedule[i];
@@ -131,7 +132,9 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
             }
 
             if (wp.op == WaypointOp::PICKUP) {
-                assert(vehicle.load < vehicle.capacity && "Vehicle's load should be less than its capacity before a pickup!");
+                assert(vehicle.load < vehicle.capacity &&
+                       "Vehicle's load should be less than its capacity before a pickup!");
+                assert(orders[wp.order_id].status == OrderStatus::PICKING);
                 orders[wp.order_id].pickup_time_ms = system_time_ms;
                 orders[wp.order_id].status = OrderStatus::ONBOARD;
                 vehicle.load++;
@@ -145,6 +148,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
 
             } else if (wp.op == WaypointOp::DROPOFF) {
                 assert(vehicle.load > 0 && "Vehicle's load should not be zero before a dropoff!");
+                assert(orders[wp.order_id].status == OrderStatus::ONBOARD);
                 orders[wp.order_id].dropoff_time_ms = system_time_ms;
                 orders[wp.order_id].status = OrderStatus::COMPLETE;
                 vehicle.load--;

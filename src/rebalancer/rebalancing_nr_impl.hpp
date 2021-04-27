@@ -16,7 +16,7 @@ void RepositionIdleVehicleThroughNaiveRebalancer(const std::vector<Order> &order
                                                  RouterFunc &router_func) {
     TIMER_START(t)
 
-    // Get a list of the unassigned orders.
+    // 1. Get a list of the unassigned orders.
     std::vector<size_t> pending_order_ids;
     for (const auto &order : orders) {
         if (order.status == OrderStatus::PENDING) { pending_order_ids.push_back(order.id); }
@@ -31,19 +31,20 @@ void RepositionIdleVehicleThroughNaiveRebalancer(const std::vector<Order> &order
                    num_of_idle_vehicles, pending_order_ids.size());
     }
 
-    // Compute all rebalancing candidates.
+    // 2. Compute all rebalancing candidates.
     std::vector<std::pair<size_t, std::vector<Waypoint>>> rebalancing_candidates;
     for (auto order_id : pending_order_ids) {
         for (const auto &vehicle : vehicles) {
             if (vehicle.status != VehicleStatus::IDLE) { continue; }
             auto rebalancing_route = router_func(vehicle.pos, orders[order_id].origin, RoutingType::TIME_ONLY);
-            std::vector<Waypoint> rebalancing_schedule = {Waypoint{orders[order_id].origin, WaypointOp::REPOSITION,
-                                                                  orders[order_id].id, std::move(rebalancing_route)}};
+            std::vector<Waypoint> rebalancing_schedule =
+                    {Waypoint{orders[order_id].origin, WaypointOp::REPOSITION,
+                              orders[order_id].id, std::move(rebalancing_route)}};
             rebalancing_candidates.push_back({vehicle.id, rebalancing_schedule});
         }
     }
 
-    // Select suitable rebalancing candidates. Greedily from the one with the shortest travel time.
+    // 3. Select suitable rebalancing candidates. Greedily from the one with the shortest travel time.
     int num_of_new_rebalancing_vehicles = 0;
     std::sort(rebalancing_candidates.begin(), rebalancing_candidates.end(),
               [](std::pair<size_t, std::vector<Waypoint>> a, std::pair<size_t, std::vector<Waypoint>> b) {
@@ -53,18 +54,19 @@ void RepositionIdleVehicleThroughNaiveRebalancer(const std::vector<Order> &order
     std::vector<size_t> selected_vehicle_ids;
     std::vector<size_t> selected_order_ids;
     for (auto &rebalancing_task : rebalancing_candidates) {
-        // check if the vehicle has been selected to do a rebalancing task
+        // Check if the vehicle has been selected to do a rebalancing task
         if (std::find(selected_vehicle_ids.begin(), selected_vehicle_ids.end(), rebalancing_task.first)
             != selected_vehicle_ids.end()) { continue; }
-        // check if the visiting point in the current rebalancing task has been visited
+        // Check if the visiting point in the current rebalancing task has been visited
         if (std::find(selected_order_ids.begin(), selected_order_ids.end(), rebalancing_task.second[0].order_id)
             != selected_order_ids.end()) { continue; }
         selected_vehicle_ids.push_back(rebalancing_task.first);
         selected_order_ids.push_back(rebalancing_task.second[0].order_id);
         num_of_new_rebalancing_vehicles++;
+        // 4. Push the rebalancing task to the assigned vehicle.
         auto &rebalancing_vehicle = vehicles[rebalancing_task.first];
         auto &rebalancing_schedule = rebalancing_task.second;
-        UpdaVehicleScheduleAndBuildRoute(rebalancing_vehicle, rebalancing_schedule, router_func);
+        UpdVehicleScheduleAndBuildRoute(rebalancing_vehicle, rebalancing_schedule, router_func);
 
 //        if (DEBUG_PRINT) {
 //            fmt::print("            +Reposition Vehicle #{} to Pos {}, where Order #{} is located.\n",

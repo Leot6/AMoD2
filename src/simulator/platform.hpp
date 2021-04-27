@@ -6,6 +6,7 @@
 #include "vehicle.hpp"
 #include "utility/tqdm.h"
 #include "dispatcher/dispatch_gi.hpp"
+#include "dispatcher/dispatch_osp.hpp"
 #include "dispatcher/dispatch_sba.hpp"
 #include "rebalancer/rebalancing_nr.hpp"
 

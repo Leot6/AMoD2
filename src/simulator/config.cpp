@@ -51,8 +51,8 @@ PlatformConfig load_platform_config(const std::string &path_to_platform_config, 
     platform_config.mod_system_config.request_config.request_density =
             platform_config_yaml["mod_system_config"]["request_config"]["request_density"]
                     .as<float>();
-    platform_config.mod_system_config.request_config.max_pickup_wait_time_s =
-            platform_config_yaml["mod_system_config"]["request_config"]["max_pickup_wait_time_s"]
+    platform_config.mod_system_config.request_config.max_pickup_wait_time_s = 60 *
+            platform_config_yaml["mod_system_config"]["request_config"]["max_pickup_wait_time_min"]
                     .as<double>();
     platform_config.mod_system_config.request_config.max_onboard_detour =
             platform_config_yaml["mod_system_config"]["request_config"]["max_onboard_detour"]

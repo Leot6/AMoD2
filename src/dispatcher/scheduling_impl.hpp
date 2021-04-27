@@ -53,7 +53,6 @@ SchedulingResult ComputeScheduleOfInsertingOrderToVehicle(const Order &order,
     return scheduling_result;
 }
 
-
 template<typename RouterFunc>
 std::vector<Waypoint> GenerateScheduleFromSubSchedule(const Order &order,
                                                       const Vehicle &vehicle,
@@ -62,41 +61,37 @@ std::vector<Waypoint> GenerateScheduleFromSubSchedule(const Order &order,
                                                       size_t dropoff_idx,
                                                       RouterFunc &router_func) {
     std::vector<Waypoint> new_schedule;
-
-    auto pos = vehicle.pos;
+    auto pre_pos = vehicle.pos;
     int idx = 0;
     while (true) {
         if (idx == pickup_idx) {
-            auto route = router_func(pos, order.origin, RoutingType::TIME_ONLY);
-            pos = order.origin;
+            auto route = router_func(pre_pos, order.origin, RoutingType::TIME_ONLY);
             new_schedule.emplace_back(
-                    Waypoint{pos, WaypointOp::PICKUP, order.id, std::move(route)});
+                    Waypoint{order.origin, WaypointOp::PICKUP, order.id, std::move(route)});
+            pre_pos = order.origin;
         }
-
         if (idx == dropoff_idx) {
-            auto route = router_func(pos, order.destination, RoutingType::TIME_ONLY);
-            pos = order.destination;
+            auto route = router_func(pre_pos, order.destination, RoutingType::TIME_ONLY);
             new_schedule.emplace_back(
-                    Waypoint{pos, WaypointOp::DROPOFF, order.id, std::move(route)});
+                    Waypoint{order.destination, WaypointOp::DROPOFF, order.id, std::move(route)});
+            pre_pos = order.destination;
         }
-
         if (idx >= sub_schedule.size()) {
             assert (!new_schedule.empty());
             return new_schedule;
         }
-
-        auto route = router_func(pos, vehicle.schedule[idx].pos, RoutingType::TIME_ONLY);
-        pos = sub_schedule[idx].pos;
-        new_schedule.emplace_back(Waypoint{pos,
-                                           vehicle.schedule[idx].op,
-                                           vehicle.schedule[idx].order_id,
+        auto route = router_func(pre_pos, sub_schedule[idx].pos, RoutingType::TIME_ONLY);
+        new_schedule.emplace_back(Waypoint{sub_schedule[idx].pos,
+                                           sub_schedule[idx].op,
+                                           sub_schedule[idx].order_id,
                                            std::move(route)});
+        pre_pos = sub_schedule[idx].pos;
 
         idx++;
     }
-
     assert(false && "Logical error! We should never reach this line of code!");
 }
+
 
 
 template <typename RouterFunc>
@@ -119,7 +114,7 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
                 // (wp.order_id == order.id) means the max pickup constraint of the inserted order is violated,
                 // since later pickup brings longer wait, we can break the insertion of this order.
                 if (wp.order_id == order.id) { return {false, 2}; }
-                // (idx <= dropoff_idx) mean the the violation is caused by the pick-up of the inserted order,
+                // (idx <= dropoff_idx) means the the violation is caused by the pick-up of the inserted order,
                 // since the violation happens before the dropoff of the order, we can try a new pickup insertion
                 if (idx <= dropoff_idx) { return {false, 1}; }
                 return {false, 0};
@@ -152,31 +147,62 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
 }
 
 template <typename RouterFunc>
-void UpdaVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func) {
-    // if a rebalancing vehicle is assigned a trip while ensuring it visits the reposition waypoint,
-    // its rebalancing task is cancelled
+void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func) {
+    // If a rebalancing vehicle is assigned a trip while ensuring it visits the reposition waypoint,
+    // its rebalancing task can be cancelled.
     if (vehicle.status == VehicleStatus::REBALANCING && schedule.size() > 1) {
         assert(vehicle.schedule.size() == 1);
+        auto removed_wp_idx = 0;
         for (auto i = 0; i < schedule.size(); i++) {
             if (schedule[i].op == WaypointOp::REPOSITION) {
                 schedule.erase(schedule.begin() + i);
+                removed_wp_idx = i;
                 break;
             }
         }
         assert(schedule.size() % 2 == 0);
     }
-
-    // update vehicle's schedule
-    vehicle.schedule = schedule;
-    auto pos = vehicle.pos;
-    for (auto i = 0; i < vehicle.schedule.size(); i++) {
-        auto &wp = vehicle.schedule[i];
-        auto route = router_func(pos, wp.pos, RoutingType::FULL_ROUTE);
-        wp.route = std::move(route);
-        pos = wp.pos;
+    try {
+        fmt::print("[DEBUG] a\n");
+        // Update vehicle's schedule with detailed route
+        vehicle.schedule = schedule;
+        auto pre_pos = vehicle.pos;
+        for (auto i = 0; i < vehicle.schedule.size(); i++) {
+            fmt::print("[DEBUG] a1\n");
+            auto &wp = vehicle.schedule[i];
+            fmt::print("[DEBUG] a2\n");
+            auto route = router_func(pre_pos, wp.pos, RoutingType::FULL_ROUTE);
+            fmt::print("[DEBUG] a3\n");
+            wp.route = std::move(route);
+            fmt::print("[DEBUG] a4\n");
+            pre_pos = wp.pos;
+            fmt::print("[DEBUG] a5\n");
+        }
+        fmt::print("[DEBUG] b\n");
     }
+    catch (std::exception &e) {
+        std::cout << " a standard exception was caught, with message '"
+                  << e.what() << "'\n";
+    }
+//    fmt::print("[DEBUG] a\n");
+//    // Update vehicle's schedule with detailed route
+//    vehicle.schedule = schedule;
+//    auto pre_pos = vehicle.pos;
+//    for (auto i = 0; i < vehicle.schedule.size(); i++) {
+//        fmt::print("[DEBUG] a1\n");
+//        auto &wp = vehicle.schedule[i];
+//        fmt::print("[DEBUG] a2\n");
+//        auto route = router_func(pre_pos, wp.pos, RoutingType::FULL_ROUTE);
+//        fmt::print("[DEBUG] a3\n");
+//        wp.route = std::move(route);
+//        fmt::print("[DEBUG] a4\n");
+//        pre_pos = wp.pos;
+//        fmt::print("[DEBUG] a5\n");
+//    }
+//    fmt::print("[DEBUG] b\n");
 
-    // update vehicle's status
+    // Update vehicle's status
+    vehicle.schedule_is_updated_at_current_epoch = true;
     if (vehicle.schedule.size() > 0) {
         if (vehicle.schedule[0].op == WaypointOp::PICKUP || vehicle.schedule[0].op == WaypointOp::DROPOFF) {
             vehicle.status = VehicleStatus::WORKING;
@@ -187,8 +213,9 @@ void UpdaVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &s
     } else if (vehicle.schedule.size() == 0) {
         vehicle.status = VehicleStatus::IDLE;
     }
+    fmt::print("[DEBUG] c\n");
 
-    // add vehicle's pre-route, when vehicle is currently on the road link instead of a waypoint node
+    // Add vehicle's pre-route, when vehicle is currently on the road link instead of a waypoint node
     if (vehicle.step_to_pos.duration_ms > 0) {
         auto &route = vehicle.schedule[0].route;
         route.duration_ms += vehicle.step_to_pos.duration_ms;
@@ -196,11 +223,12 @@ void UpdaVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &s
         route.steps.insert(route.steps.begin(), vehicle.step_to_pos);
         assert(route.steps[0].poses[0].node_id == route.steps[0].poses[1].node_id);
     }
+    fmt::print("[DEBUG] d\n");
 }
 
 template <typename RouterFunc>
 bool PassQuickCheck(const Order &order, const Vehicle &vehicle, uint64_t system_time_ms, RouterFunc &router_func) {
-    // the vehicle can not serve the order even when it is idle.
+    // The vehicle can not serve the order even when it is idle.
     if (router_func(vehicle.pos, order.origin, RoutingType::TIME_ONLY).duration_ms +
         vehicle.step_to_pos.duration_ms + system_time_ms > order.max_pickup_time_ms) {
         return false;

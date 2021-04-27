@@ -51,7 +51,7 @@ void CheckFileExistence(const std::string& path_to_file) {
 
 void PrintSchedule(const Vehicle &vehicle, const std::vector<Waypoint> &schedule) {
     fmt::print("[DEBUG] Vehicle #{} ({}) schedule ([node_id, pod, order_id]):",
-               vehicle_status_to_string(vehicle.status), vehicle.id);
+               vehicle.id, vehicle_status_to_string(vehicle.status));
     for (const auto &wp : schedule) {
         auto pod = 0;
         if (wp.op == WaypointOp::PICKUP) { pod = 1; }

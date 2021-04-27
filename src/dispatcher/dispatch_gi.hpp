@@ -8,7 +8,7 @@
 #include <cstddef>
 
 /// \brief Assign the new received orders to the vehicles using Greedy Insertion Heuristics.
-/// \details greedy insertion (GI): insert requests to vehicles in first-in-first-out manner
+/// \details greedy insertion (GI): insert orders to vehicles in first-in-first-out manner
 /// \param new_received_order_ids A vector holding indices to the new received orders in the current epoch.
 /// \param orders A vector of all orders.
 /// \param vehicles A vector of all vehicles.
