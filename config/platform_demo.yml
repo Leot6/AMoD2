@@ -16,11 +16,11 @@ area_config:
   lat_max: 40.8825
 mod_system_config:
   dispatch_config:
-    dispatcher: "SBA"   # 3 options: GI, SBA, OSP
+    dispatcher: "OSP"   # 3 options: GI, SBA, OSP
 #    rebalancer: "NR"   # 2 options: NR (naive rebalancer), NONE
     rebalancer: "NONE"
   fleet_config:
-    fleet_size: 500
+    fleet_size: 2000
     veh_capacity: 6
   request_config:
     request_density: 1    # <= 1

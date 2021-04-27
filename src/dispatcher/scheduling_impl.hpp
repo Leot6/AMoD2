@@ -162,44 +162,16 @@ void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &sc
         }
         assert(schedule.size() % 2 == 0);
     }
-    try {
-        fmt::print("[DEBUG] a\n");
-        // Update vehicle's schedule with detailed route
-        vehicle.schedule = schedule;
-        auto pre_pos = vehicle.pos;
-        for (auto i = 0; i < vehicle.schedule.size(); i++) {
-            fmt::print("[DEBUG] a1\n");
-            auto &wp = vehicle.schedule[i];
-            fmt::print("[DEBUG] a2\n");
-            auto route = router_func(pre_pos, wp.pos, RoutingType::FULL_ROUTE);
-            fmt::print("[DEBUG] a3\n");
-            wp.route = std::move(route);
-            fmt::print("[DEBUG] a4\n");
-            pre_pos = wp.pos;
-            fmt::print("[DEBUG] a5\n");
-        }
-        fmt::print("[DEBUG] b\n");
+
+    // Update vehicle's schedule with detailed route
+    vehicle.schedule = schedule;
+    auto pre_pos = vehicle.pos;
+    for (auto i = 0; i < vehicle.schedule.size(); i++) {
+        auto &wp = vehicle.schedule[i];
+        auto route = router_func(pre_pos, wp.pos, RoutingType::FULL_ROUTE);
+        wp.route = std::move(route);
+        pre_pos = wp.pos;
     }
-    catch (std::exception &e) {
-        std::cout << " a standard exception was caught, with message '"
-                  << e.what() << "'\n";
-    }
-//    fmt::print("[DEBUG] a\n");
-//    // Update vehicle's schedule with detailed route
-//    vehicle.schedule = schedule;
-//    auto pre_pos = vehicle.pos;
-//    for (auto i = 0; i < vehicle.schedule.size(); i++) {
-//        fmt::print("[DEBUG] a1\n");
-//        auto &wp = vehicle.schedule[i];
-//        fmt::print("[DEBUG] a2\n");
-//        auto route = router_func(pre_pos, wp.pos, RoutingType::FULL_ROUTE);
-//        fmt::print("[DEBUG] a3\n");
-//        wp.route = std::move(route);
-//        fmt::print("[DEBUG] a4\n");
-//        pre_pos = wp.pos;
-//        fmt::print("[DEBUG] a5\n");
-//    }
-//    fmt::print("[DEBUG] b\n");
 
     // Update vehicle's status
     vehicle.schedule_is_updated_at_current_epoch = true;
@@ -212,8 +184,8 @@ void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &sc
         }
     } else if (vehicle.schedule.size() == 0) {
         vehicle.status = VehicleStatus::IDLE;
+        return;
     }
-    fmt::print("[DEBUG] c\n");
 
     // Add vehicle's pre-route, when vehicle is currently on the road link instead of a waypoint node
     if (vehicle.step_to_pos.duration_ms > 0) {
@@ -223,7 +195,6 @@ void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &sc
         route.steps.insert(route.steps.begin(), vehicle.step_to_pos);
         assert(route.steps[0].poses[0].node_id == route.steps[0].poses[1].node_id);
     }
-    fmt::print("[DEBUG] d\n");
 }
 
 template <typename RouterFunc>

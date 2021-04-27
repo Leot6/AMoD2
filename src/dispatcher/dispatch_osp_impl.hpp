@@ -19,7 +19,6 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
                                                   uint64_t system_time_ms,
                                                   RouterFunc &router_func) {
     TIMER_START(t)
-
     // 1. Get the list of considered orders, normally including all picking and pending orders. But when the traffic
     // is deterministic, an order that cannot be served at last epoch is theoretically not servable at the current
     // epoch either. Then the list of considered orders is consisting of all picking and new received orders.
@@ -73,34 +72,29 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
 
     // 5. Update schedule of vehicles, the assigned (picking) orders of which are reassigned to other vehicles.
     auto num_vehicles = vehicles.size();
-    try {
-        for (auto i = 0; i < num_vehicles; i++) {
-            fmt::print("[DEBUG] 1\n");
-            auto &vehicle = vehicles[i];
-            if (vehicle.schedule_is_updated_at_current_epoch) { continue; }
-            if (vehicle.status == VehicleStatus::WORKING) {
-                if (vehicle.schedule.size() == vehicle.load) { continue; }
-                fmt::print("[DEBUG] 2\n");
-                fmt::print("onboard rids {}\n", vehicle.onboard_order_ids);
-                PrintSchedule(vehicle, vehicle.schedule);
-                std::vector<Waypoint> basic_schedule;
-                auto vehicle_schedule = vehicle.schedule;
-                for (const auto &wp : vehicle_schedule) {
-                    if (std::find(vehicle.onboard_order_ids.begin(), vehicle.onboard_order_ids.end(), wp.order_id)
-                        != vehicle.onboard_order_ids.end()) { basic_schedule.push_back(wp); }
+    for (auto i = 0; i < num_vehicles; i++) {
+        auto &vehicle = vehicles[i];
+        if (vehicle.schedule_is_updated_at_current_epoch) { continue; }
+        if (vehicle.status == VehicleStatus::WORKING) {
+            if (vehicle.schedule.size() == vehicle.load) { continue; }
+
+//            fmt::print("[DEBUG] onboard rids {}\n", vehicle.onboard_order_ids);
+//            PrintSchedule(vehicle, vehicle.schedule);
+
+            std::vector<Waypoint> basic_schedule;
+            auto pre_pos = vehicle.pos;
+            for (auto wp : vehicle.schedule) {
+                if (std::find(vehicle.onboard_order_ids.begin(), vehicle.onboard_order_ids.end(), wp.order_id)
+                    != vehicle.onboard_order_ids.end()) {
+                    wp.route = router_func(pre_pos, wp.pos, RoutingType::TIME_ONLY);
+                    basic_schedule.push_back(wp);
+                    pre_pos = wp.pos;
                 }
-                fmt::print("[DEBUG] 5\n");
-                PrintSchedule(vehicle, basic_schedule);
-                UpdVehicleScheduleAndBuildRoute(vehicle, basic_schedule, router_func);
-                fmt::print("[DEBUG] 6\n");
             }
+//            PrintSchedule(vehicle, basic_schedule);
+            UpdVehicleScheduleAndBuildRoute(vehicle, basic_schedule, router_func);
         }
     }
-    catch (std::exception &e) {
-        std::cout << " a standard exception was caught, with message '"
-                  << e.what() << "'\n";
-    }
-
 
     if (DEBUG_PRINT) {
         int num_of_assigned_orders = 0;
@@ -122,7 +116,7 @@ std::vector<SchedulingResult> ComputeFeasibleVehicleTripPairs(const std::vector<
                                                               RouterFunc &router_func) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
-        fmt::print("                +Computing feasible vehicle trip pairs...\n");
+        fmt::print("                +Computing feasible vehicle trip pairs...");
     }
     std::vector<SchedulingResult> feasible_vehicle_trip_pairs;
     for (const auto &vehicle : vehicles) {
@@ -154,7 +148,7 @@ std::vector<SchedulingResult> ComputeFeasibleTripsForOneVehicle(const std::vecto
     std::vector<SchedulingResult> feasible_trips_for_this_vehicle;
 
     // Get the basic schedules of the vehicle.
-    auto basic_schedules = GetBasicSchedulesOfVehicle(orders, vehicle, system_time_ms, router_func);
+    auto basic_schedules = ComputeBasicSchedulesOfVehicle(orders, vehicle, system_time_ms, router_func);
 
     // Compute trips of size 1.
     std::vector<SchedulingResult> feasible_trips_of_size_1 = ComputeSize1TripsForOneVehicle(considered_order_ids,
@@ -287,11 +281,12 @@ std::vector<SchedulingResult> ComputeSizeKTripsForOneVehicle(
 }
 
 template <typename RouterFunc>
-std::vector<std::vector<Waypoint>> GetBasicSchedulesOfVehicle(const std::vector<Order> &orders,
-                                                              const Vehicle &vehicle,
-                                                              uint64_t system_time_ms,
-                                                              RouterFunc &router_func) {
+std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vector<Order> &orders,
+                                                                  const Vehicle &vehicle,
+                                                                  uint64_t system_time_ms,
+                                                                  RouterFunc &router_func) {
     std::vector<std::vector<Waypoint>> basic_schedules;
+
     // If the vehicle is rebalancing, just return its current full schedule to ensure its rebalancing task.
     // If the vehicle is idle, then the basic schedule is an empty schedule.
     if (vehicle.status == VehicleStatus::REBALANCING || vehicle.status == VehicleStatus::IDLE) {
@@ -301,9 +296,14 @@ std::vector<std::vector<Waypoint>> GetBasicSchedulesOfVehicle(const std::vector<
 
     // If the vehicle is walking, return the sub-schedule only including the drop off tasks.
     std::vector<Waypoint> basic_schedule;
-    for (const auto &wp : vehicle.schedule) {
+    auto pre_pos = vehicle.pos;
+    for (auto wp : vehicle.schedule) {
         if (std::find(vehicle.onboard_order_ids.begin(), vehicle.onboard_order_ids.end(), wp.order_id)
-        != vehicle.onboard_order_ids.end()) { basic_schedule.push_back(wp); }
+            != vehicle.onboard_order_ids.end()) {
+            wp.route = router_func(pre_pos, wp.pos, RoutingType::TIME_ONLY);
+            basic_schedule.push_back(wp);
+            pre_pos = wp.pos;
+        }
     }
     assert(basic_schedule.size() == vehicle.load);
     basic_schedules.push_back(basic_schedule);
@@ -317,9 +317,8 @@ std::vector<std::vector<Waypoint>> GetBasicSchedulesOfVehicle(const std::vector<
         auto pre_pos = vehicle.pos;
         for (auto wp_idx : wp_indices) {
             auto wp = basic_schedule[wp_idx];
-            auto route = router_func(pre_pos, wp.pos, RoutingType::TIME_ONLY);
-            wp.route = std::move(route);
-            new_basic_schedule.push_back(std::move(wp));
+            wp.route = router_func(pre_pos, wp.pos, RoutingType::TIME_ONLY);
+            new_basic_schedule.push_back(wp);
             pre_pos = wp.pos;
         }
         // Terms "0, 0, orders[0]" here are useless, they are served as default values for the following function.

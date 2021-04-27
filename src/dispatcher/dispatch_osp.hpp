@@ -80,10 +80,10 @@ std::vector<SchedulingResult> ComputeSizeKTripsForOneVehicle(
 /// \brief Get the basic schedules of the given vehicle, each of which only includes waypoints
 /// of dropping off onboard orders.
 template <typename RouterFunc>
-std::vector<std::vector<Waypoint>> GetBasicSchedulesOfVehicle(const std::vector<Order> &orders,
-                                                              const Vehicle &vehicle,
-                                                              uint64_t system_time_ms,
-                                                              RouterFunc &router_func);
+std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vector<Order> &orders,
+                                                                  const Vehicle &vehicle,
+                                                                  uint64_t system_time_ms,
+                                                                  RouterFunc &router_func);
 
 
 // Implementation is put in a separate file for clarity and maintainability.
