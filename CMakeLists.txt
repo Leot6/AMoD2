@@ -27,10 +27,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # and term "gurobi91" in target_link_libraries(mod-abm-lib ... gurobi91) (line 53).
 if (MACOS)
     MESSAGE(STATUS "operation system is MacOs (${CMAKE_SYSTEM})")
-    set(GUROBI_DIR /Library/gurobi911/mac64)
+    set(GUROBI_DIR /Library/gurobi912/mac64)
 elseif (LINUX)
     MESSAGE(STATUS "operation system is Linux (${CMAKE_SYSTEM})")
-    set(GUROBI_DIR /Library/gurobi911/linux64)
+    set(GUROBI_DIR /Library/gurobi912/linux64)
 endif ()
     # path to: "gurobi_c++.h"
 include_directories(${GUROBI_DIR}/include)
