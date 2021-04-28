@@ -36,6 +36,38 @@ Or:
 ./build/main "./config/platform_demo.yml"
 ```
 
+### An Example Simulation Result
+The following simulation result is from a senariao with 400k requests during the whole day. A 30 mins warm up phase and a 30 mins cool down phase are considered.
+```
+[INFO] Loaded the platform configuration yaml file from AMoD2/config/platform_demo.yml.
+[INFO] Router is ready.  (6.03s)
+[INFO] Demand Generator is ready.  (2.05s)
+[INFO] Platform is ready.
+-------------------------------------------------------------------------------------------------
+ AMoD: 100.0% ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿2880/2880 [04:29<00:00|10.7Hz]
+[INFO] Simulation completed. Creating report.
+-------------------------------------------------------------------------------------------------
+# Simulation Runtime
+  - Start: 2021-04-28 23:47:43, End: 2021-04-28 23:52:13, Time: 0:04:29.
+  - Main Simulation: init_time = 8.08 s, runtime = 0:04:19, avg_time = 0.09 s.
+# System Configurations
+  - From 00:00:00 to 00:00:00. (main simulation between 00:30:00 and 23:30:00).
+  - Fleet Config: size = 2000, capacity = 6. (60 + 2760 + 60 = 2880 epochs).
+  - Order Config: density = 1 (400k), max_wait = 300 s. (Δt = 30 s).
+  - Dispatch Config: dispatcher = SBA, rebalancer = NR.
+  - Video Config: false, frame_length = 10 s, fps = 20, duration = 414 s.
+# Orders (362614/390679)
+  - complete = 362557 (92.80%), onboard = 57 (0.01%), total_service = 362614 (92.82%).
+  - avg_shortest_travel = 610.74 s, avg_wait = 134.47 s, avg_delay = 264.81 s.
+# Vehicles (2000)
+  - Service Distance: total_dist = 706894.42 km, avg_dist = 353.45 km.
+  - Service Duration: avg_time = 67711.42 s (81.78% of the main simulation time).
+  - Empty Travel: avg_time = 1968.11 s (2.91%), avg_dist = 0.33 km (0.09%).
+  - Rebl Travel: avg_time = 61.60 s (0.09%), avg_dist = 1.92 km (0.54%).
+  - Load: average_load_dist = 1.85, average_load_time = 1.97.
+-------------------------------------------------------------------------------------------------
+```
+
 ### Code File Structure
 <img src="https://github.com/Leot6/AMoD2/blob/main/doc/code%20file%20structure.png" width="720">
 
