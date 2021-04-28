@@ -38,12 +38,12 @@ class tqdm {
         bool is_tty = isatty(1);
         int width = 30;
         int width_adjustment = 40;
-        std::string label = "";
+        std::string default_label = "";
         int current_iteration = 0;
 
     public:
         tqdm(std::string label_, int total_iterations_) {
-            label = label_;
+            default_label = label_;
             total_iterations = total_iterations_;
             set_theme_braille();
         }
@@ -58,7 +58,7 @@ class tqdm {
             nupdates = 0;
             total_iterations = 0;
             current_iteration = 0;
-            label = "";
+            default_label = "";
         }
 
         void set_theme_line() { bars = {"─", "─", "─", "╾", "╾", "╾", "╾", "━", "═"}; }
@@ -68,20 +68,23 @@ class tqdm {
         void set_theme_vertical() { bars = {"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█", "█"}; }
         void set_theme_basic() {bars = {" ", " ", " ", " ", " ", " ", " ", " ", "#"};
         }
-        void set_label(std::string label_) { label = label_; }
+        void set_label(std::string label_) { default_label = label_; }
 
-        void finish() {
+        void finish(std::string finish_label = "") {
             current_iteration = total_iterations;
-            progress();
+            if (finish_label == "") { finish_label = default_label; }
+            progress(finish_label);
             printf("\n");
             fflush(stdout);
         }
-        void progress() {
+        void progress(std::string progress_label = "") {
+            if (progress_label == "") { progress_label = default_label; }
             current_iteration++;
+            // Get the console width.
             struct winsize size;
             ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
             int window_width = size.ws_col;
-            width = window_width - width_adjustment - label.size();
+            width = window_width - width_adjustment - progress_label.size();
             if (width < 0 || width > 20) {
                 width = 30;
             }
@@ -116,7 +119,7 @@ class tqdm {
                 // and slowing down the loop, shoot for ~25Hz and smooth over 3 seconds
                 if (nupdates > 10) {
                     period = (int)( std::min(std::max((1.0/25)*current_iteration/dt_tot,1.0), 5e5));
-                    smoothing = 25*3;
+                    smoothing = 25 * 3;
                 }
                 double peta = (total_iterations-current_iteration)/avgrate;
                 double pct = (double)current_iteration/(total_iterations*0.01);
@@ -152,12 +155,14 @@ class tqdm {
 
                 printf("\015 ");
                 // label
-                printf("%s:", label.c_str());
+                printf("%s: ", progress_label.c_str());
                 // percentage
-                printf("%4.1f%% ", pct);
+                printf("%.1f%% ", pct);
                 // bar
                 for (int i = 0; i < ifills; i++) { std::cout << bars[8]; }
-                if (!in_screen && (current_iteration != total_iterations)) { printf("%s",bars[(int)(8.0*(fills-ifills))]); }
+                if (!in_screen && (current_iteration != total_iterations)) {
+                    printf("%s",bars[(int)(8.0*(fills-ifills))]);
+                }
                 for (int i = 0; i < width-ifills-1; i++) { std::cout << bars[0]; }
                 // count
                 printf("%d/%d ", current_iteration, total_iterations);

@@ -28,26 +28,31 @@ void AssignOrdersThroughSingleRequestBatchAssign(const std::vector<size_t> &new_
 
     // 2. Compute the assignment policy, indicating which vehicle to pick which order.
     std::sort(feasible_vehicle_order_pairs.begin(), feasible_vehicle_order_pairs.end(), SortVehicleTripPairs);
-//    auto selected_vehicle_order_pair_indices = GreedyAssignment(feasible_vehicle_order_pairs);
-    auto selected_vehicle_order_pair_indices = IlpAssignment(feasible_vehicle_order_pairs, new_received_order_ids,
-                                                             orders, vehicles);
+    auto selected_vehicle_order_pair_indices =
+            IlpAssignment(feasible_vehicle_order_pairs, new_received_order_ids, orders, vehicles);
+    //    auto selected_vehicle_order_pair_indices = GreedyAssignment(feasible_vehicle_order_pairs);
 
+//// debug code
 //    fmt::print("(veh_id, trip_ids, cost_s)\n");
-//    for (const SchedulingResult &vo_pair : feasible_vehicle_order_pairs) {
-//        Order &order = orders[vo_pair.trip_ids[0]];
-//        fmt::print("  -({}, {}, {})\n", vo_pair.vehicle_id, vo_pair.trip_ids,
-//                   vo_pair.best_schedule_cost_ms / 1000.0);
+//    const auto &all_pairs = feasible_vehicle_order_pairs;
+//    const auto &selected_pair_indices = selected_vehicle_order_pair_indices;
+//    for (auto i = 0; i < all_pairs.size(); i++) {
+//        auto &this_pair = all_pairs[i];
+//        fmt::print("  -({}, {}, {})", this_pair.vehicle_id, this_pair.trip_ids,
+//                   this_pair.best_schedule_cost_ms / 1000.0);
+//        if (std::find(selected_pair_indices.begin(), selected_pair_indices.end(), i) != selected_pair_indices.end()) {
+//            fmt::print(" selected ({})", i);
+//        }
+//        fmt::print("\n");
 //    }
-//    fmt::print("selected_vehicle_order_pair_indices {}\n", selected_vehicle_order_pair_indices);
-
-    std::vector<size_t> rids_assigned;
+//    fmt::print("selected_pair_indices {}\n", selected_pair_indices);
+//// debug code
 
     // 3. Update vehicles' schedules and assigned orders' statuses
     for (auto idx : selected_vehicle_order_pair_indices) {
         auto &vo_pair = feasible_vehicle_order_pairs[idx];
         if (vo_pair.trip_ids.size() == 0) { continue; }  // empty assign, no change to the vehicle's schedule
         orders[vo_pair.trip_ids[0]].status = OrderStatus::PICKING;
-        rids_assigned.push_back(vo_pair.trip_ids[0]);
         auto &vehicle = vehicles[vo_pair.vehicle_id];
         auto &schedule = vo_pair.feasible_schedules[vo_pair.best_schedule_idx];
         UpdVehicleScheduleAndBuildRoute(vehicle, schedule, router_func);

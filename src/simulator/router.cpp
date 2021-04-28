@@ -55,13 +55,15 @@ Route Router::operator()(const Pos &origin, const Pos &destination, RoutingType 
             size_t v = path[i + 1];
             step.distance_mm = travel_distance_table_[u - 1][v - 1] * 1000;
             step.duration_ms = mean_travel_time_table_[u - 1][v - 1] * 1000;
-            step.poses = {getNodePos(u), getNodePos(v)};
+            step.poses.push_back(getNodePos(u));
+            step.poses.push_back(getNodePos(v));
+//            step.poses = {getNodePos(u), getNodePos(v)};
             route.distance_mm += step.distance_mm;
             route.duration_ms += step.duration_ms;
             route.steps.push_back(step);
         }
 
-        // the last step of a leg is always consisting of 2 identical points as a flag of the end of the leg
+        // the last step of a route is always consisting of 2 identical points as a flag of the end of the leg
         Step flag_step;
         flag_step.distance_mm = 0;
         flag_step.duration_ms = 0;

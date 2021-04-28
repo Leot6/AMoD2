@@ -84,27 +84,42 @@ Platform<RouterFunc, DemandGeneratorFunc>::~Platform() {
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::RunSimulation(std::string simulation_init_time_date,
+void Platform<RouterFunc, DemandGeneratorFunc>::RunSimulation(std::time_t simulation_start_time_stamp,
                                                                float total_init_time_s) {
-    CreateReport(simulation_init_time_date, total_init_time_s, 0.0);
-    auto s_time_ms = getTimeStampMs();
-    // Run simulation cycle by cycle.
+    CreateReport(simulation_start_time_stamp, total_init_time_s, 0.0);
+    std::time_t main_sim_start_time_stamp;
+    std::time_t main_sim_end_time_stamp;
 
+    // Run simulation cycle by cycle.
     if (DEBUG_PRINT) {
-        while (system_time_ms_ < system_shutdown_time_ms_) {RunCycle();}
-    } else {
-        tqdm bar1(fmt::format("AMoD (Δt={}s)",cycle_ms_ / 1000),
-                  system_shutdown_time_ms_ / cycle_ms_);
         while (system_time_ms_ < system_shutdown_time_ms_) {
-            bar1.progress();
             RunCycle();
+            if (system_time_ms_ == main_sim_start_time_ms_) { main_sim_start_time_stamp = getTimeStampMs(); }
+            if (system_time_ms_ == main_sim_end_time_ms_) { main_sim_end_time_stamp = getTimeStampMs(); }
+        }
+    } else {
+        tqdm bar1("AMoD",system_shutdown_time_ms_ / cycle_ms_);
+        std::string progress_phase = "Warm Up";
+        while (system_time_ms_ < system_shutdown_time_ms_) {
+            if (system_time_ms_ < main_sim_start_time_ms_) {
+                progress_phase = "Warm Up";
+            } else if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
+                progress_phase = "Main Study";
+            } else {
+                progress_phase = "Cool Down";
+            }
+            bar1.progress(progress_phase);
+            RunCycle();
+            if (system_time_ms_ == main_sim_start_time_ms_) { main_sim_start_time_stamp = getTimeStampMs(); }
+            if (system_time_ms_ == main_sim_end_time_ms_) { main_sim_end_time_stamp = getTimeStampMs(); }
         }
         bar1.finish();
     }
 
     // Create report.
+    auto main_sim_runtime_s = (main_sim_end_time_stamp - main_sim_start_time_stamp) / 1000.0;
     fmt::print("[INFO] Simulation completed. Creating report.\n");
-    CreateReport(simulation_init_time_date, total_init_time_s,(getTimeStampMs() - s_time_ms) / 1000.0);
+    CreateReport(simulation_start_time_stamp, total_init_time_s, main_sim_runtime_s);
 
     return;
 };
@@ -119,7 +134,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
                    system_shutdown_time_ms_ / cycle_ms_);
     }
 
-    // 1. Update the vehicles' positions and the orders' statuses.
+    // 1. Update the vehicles' positions and the orders' statuses. system_time_ms_ is updated at this step.
     if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
         // Advance the vehicles frame by frame (if render_video=false, then frame_ms_=cycle_ms_).
         for (auto ms = 0; ms < cycle_ms_; ms += frame_ms_) {
@@ -145,15 +160,22 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
     const auto new_received_order_ids = GenerateOrders();
 
     // 3. Assign pending orders to vehicles.
-    if (dispatcher_ == DispatcherMethod::GI) {
-        AssignOrdersThroughGreedyInsertion(new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
-    } else if (dispatcher_ == DispatcherMethod::SBA) {
+    if (system_time_ms_ > main_sim_start_time_ms_ && system_time_ms_ <= main_sim_end_time_ms_) {
+        if (dispatcher_ == DispatcherMethod::GI) {
+            AssignOrdersThroughGreedyInsertion(
+                    new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
+        } else if (dispatcher_ == DispatcherMethod::SBA) {
+            AssignOrdersThroughSingleRequestBatchAssign(
+                    new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
+        } else if (dispatcher_ == DispatcherMethod::OSP) {
+            AssignOrdersThroughOptimalSchedulePoolAssign(
+                    new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
+        }
+    } else {
         AssignOrdersThroughSingleRequestBatchAssign(
                 new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
-    } else if (dispatcher_ == DispatcherMethod::OSP) {
-        AssignOrdersThroughOptimalSchedulePoolAssign(
-                new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
     }
+
 
 
     // 4. Reposition idle vehicles to high demand areas.
@@ -236,7 +258,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::UpdVehiclesPositions(uint64_t ti
                       orders_,
                       system_time_ms_,
                       time_ms,
-                      (system_time_ms_ >= main_sim_start_time_ms_ &&
+                      (system_time_ms_ > main_sim_start_time_ms_ &&
                        system_time_ms_ <= main_sim_end_time_ms_));
         num_of_picked_orders += new_picked_order_ids.size();
         num_of_dropped_orders += new_dropped_order_ids.size();
@@ -384,10 +406,10 @@ void Platform<RouterFunc, DemandGeneratorFunc>::WriteToDatalog() {
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::string simulation_init_time_date,
+void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulation_start_time_stamp,
                                                              float total_init_time_s,
-                                                             float total_runtime_s) {
-    // get the width of the current terminal window
+                                                             float main_sim_runtime_s) {
+    // Get the width of the current console window
     struct winsize size;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
     int window_width = size.ws_col;
@@ -395,21 +417,37 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::string simulat
     std::string dividing_line(window_width, '-');
     fmt::print("{}\n", dividing_line);
 
-    std::string simulation_finish_time_date;
+    // Get the real world time when the simulation starts and ends.
+    auto simulation_start_time_real_world_date = ConvertTimeSecondToDate(simulation_start_time_stamp / 1000);
+    auto simulation_end_time_stamp = getTimeStampMs();
+    std::string simulation_end_time_real_world_date;
     if (orders_.size() == 0) {
-        simulation_finish_time_date = "0000-00-00 00:00:00";
+        simulation_end_time_real_world_date = "0000-00-00 00:00:00";
     } else {
-        simulation_finish_time_date = ConvertTimeSecondToDate(getTimeStampMs() / 1000);
+        simulation_end_time_real_world_date = ConvertTimeSecondToDate(simulation_end_time_stamp / 1000);
     }
+    auto total_sim_runtime_s = (simulation_end_time_stamp - simulation_start_time_stamp) / 1000.0;
 
-    int time_consumed_s = total_runtime_s;
-    int time_consumed_min = time_consumed_s / 60;
-    time_consumed_s %= 60;
-    int time_consumed_hour = time_consumed_min / 60;
-    time_consumed_min %= 60;
-    std::string run_time =
-            fmt::format("{}:{:02d}:{:02d}", time_consumed_hour, time_consumed_min, time_consumed_s);
+    // Convert the running time to format h:m:s.
+    int time_consumed_s_1 = total_sim_runtime_s;
+    int time_consumed_min_1 = time_consumed_s_1 / 60;
+    time_consumed_s_1 %= 60;
+    int time_consumed_hour_1 = time_consumed_min_1 / 60;
+    time_consumed_min_1 %= 60;
+    std::string total_sim_run_time_formatted =
+            fmt::format("{}:{:02d}:{:02d}", time_consumed_hour_1, time_consumed_min_1, time_consumed_s_1);
+    int time_consumed_s_2 = main_sim_runtime_s;
+    int time_consumed_min_2 = time_consumed_s_2 / 60;
+    time_consumed_s_2 %= 60;
+    int time_consumed_hour_2 = time_consumed_min_2 / 60;
+    time_consumed_min_2 %= 60;
+    std::string main_sim_run_time_formatted =
+            fmt::format("{}:{:02d}:{:02d}", time_consumed_hour_2, time_consumed_min_2, time_consumed_s_2);
 
+    // Get some system configurations.
+    auto file_path = platform_config_.data_file_path.path_to_taxi_data;
+    auto request_number = file_path.substr(file_path.length() - 9, 5);
+    if (request_number.substr(0, 1) == "-") { request_number = request_number.substr(1, 4); }
     auto sim_start_time_date = platform_config_.simulation_config.simulation_start_time;
     auto sim_end_time_date = ConvertTimeSecondToDate(
             ConvertTimeDateToSeconds(sim_start_time_date) + system_shutdown_time_ms_ / 1000);
@@ -418,32 +456,36 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::string simulat
     auto main_sim_end_date = ConvertTimeSecondToDate(
             ConvertTimeDateToSeconds(sim_start_time_date) + main_sim_end_time_ms_ / 1000);
     auto num_of_epochs = system_shutdown_time_ms_ / cycle_ms_;
+    auto num_of_main_epochs = platform_config_.simulation_config.simulation_duration_s / (cycle_ms_ / 1000);
     auto frame_length_s = cycle_ms_ / 1000 / platform_config_.output_config.video_config.frames_per_cycle;
     auto video_frames =  platform_config_.simulation_config.simulation_duration_s / frame_length_s;
     auto video_fps = platform_config_.output_config.video_config.replay_speed / frame_length_s;
     auto video_duration = video_frames / video_fps;
 
-    // Simulation Runtime
+    // Simulation Runtime.
     fmt::print("# Simulation Runtime\n");
-    fmt::print("  - Start: {}, End: {}, Epochs: {}.\n",
-               simulation_init_time_date, simulation_finish_time_date, num_of_epochs);
-    fmt::print("  - Runtime: init_time = {:.2f} s, runtime = {}, runtime_per_epoch = {:.2f} s.\n",
-               total_init_time_s, run_time,total_runtime_s / num_of_epochs);
+    fmt::print("  - Start: {}, End: {}, Time: {}.\n",
+               simulation_start_time_real_world_date, simulation_end_time_real_world_date,
+               total_sim_run_time_formatted);
+    fmt::print("  - Main Simulation: init_time = {:.2f} s, runtime = {}, avg_time = {:.2f} s.\n",
+               total_init_time_s, main_sim_run_time_formatted, main_sim_runtime_s / num_of_main_epochs);
 
-    // Report the platform configurations
+    // Report the platform configurations.
     fmt::print("# System Configurations\n");
-    fmt::print("  - From {} to {} (main simulation between {} and {}).\n",
+    fmt::print("  - From {} to {}. (main simulation between {} and {}).\n",
                sim_start_time_date.substr(11,20), sim_end_time_date.substr(11,20),
                main_sim_start_date.substr(11,20), main_sim_end_date.substr(11,20));
-    fmt::print("  - Fleet Config: size = {}, capacity = {} (interval = {} s).\n",
+    fmt::print("  - Fleet Config: size = {}, capacity = {}. ({} + {} + {} = {} epochs).\n",
                platform_config_.mod_system_config.fleet_config.fleet_size,
-               platform_config_.mod_system_config.fleet_config.veh_capacity, cycle_ms_ / 1000);
-    fmt::print("  - Order Config: density = {}, max_wait = {} s ({}+{}+{}={} epochs).\n",
-               platform_config_.mod_system_config.request_config.request_density,
-               platform_config_.mod_system_config.request_config.max_pickup_wait_time_s,
+               platform_config_.mod_system_config.fleet_config.veh_capacity,
                platform_config_.simulation_config.warmup_duration_s / (cycle_ms_ / 1000),
-               platform_config_.simulation_config.simulation_duration_s / (cycle_ms_ / 1000),
+               num_of_main_epochs,
                platform_config_.simulation_config.winddown_duration_s / (cycle_ms_ / 1000), num_of_epochs);
+    fmt::print("  - Order Config: density = {} ({}), max_wait = {} s. (Δt = {} s).\n",
+               platform_config_.mod_system_config.request_config.request_density,
+               request_number,
+               platform_config_.mod_system_config.request_config.max_pickup_wait_time_s,
+               cycle_ms_ / 1000);
     fmt::print("  - Dispatch Config: dispatcher = {}, rebalancer = {}.\n",
                platform_config_.mod_system_config.dispatch_config.dispatcher,
                platform_config_.mod_system_config.dispatch_config.rebalancer);
@@ -456,7 +498,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::string simulat
         return;
     }
 
-    // Report order status
+    // Report order status.
     auto order_count = 0;
     auto walkaway_order_count = 0;
     auto complete_order_count = 0;
@@ -508,8 +550,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::string simulat
         fmt::print("  [PLEASE USE LONGER SIMULATION DURATION TO BE ABLE TO COMPLETE ORDERS!]\n");
     }
 
-    // Report vehicle status
-
+    // Report vehicle status.
     uint64_t total_dist_traveled_mm = 0;
     uint64_t total_loaded_dist_traveled_mm = 0;
     uint32_t total_empty_dist_traveled_mm = 0;

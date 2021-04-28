@@ -13,7 +13,7 @@
 int main(int argc, const char *argv[]) {
     auto s_time_ms = getTimeStampMs();
 
-    // get the root directory
+    // Get the root directory.
     const int MAXPATH = 250;
     char buffer[MAXPATH];
     getcwd(buffer, MAXPATH);
@@ -56,8 +56,7 @@ int main(int argc, const char *argv[]) {
                                                                     std::move(demand_generator)};
 
     // Run simulation.
-    platform.RunSimulation(ConvertTimeSecondToDate(getTimeStampMs() / 1000),
-                           (getTimeStampMs() - s_time_ms) / 1000.0);
+    platform.RunSimulation(getTimeStampMs(), (getTimeStampMs() - s_time_ms) / 1000.0);
 
     return 0;
 }

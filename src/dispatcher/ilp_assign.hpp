@@ -11,7 +11,8 @@
 std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_trip_pairs,
                                   const std::vector<size_t> &considered_order_ids,
                                   const std::vector<Order> &orders,
-                                  const std::vector<Vehicle> &vehicles);
+                                  const std::vector<Vehicle> &vehicles,
+                                  bool ensure_assigning_orders_that_are_picking = true);
 
 /// \brief A function greedily computes the assignment, in decreasing size of the trip and increasing cost.
 /// It returns the indices of selected vehicle_trip_pairs.

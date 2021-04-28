@@ -31,7 +31,7 @@ class Platform {
     Platform &operator=(Platform &&other) = delete;
 
     /// \brief Run simulation. The master function that manages the entire simulation process.
-    void RunSimulation(std::string simulation_init_time, float total_init_time_s);
+    void RunSimulation(std::time_t simulation_start_time_stamp, float total_init_time_s);
 
   private:
     /// \brief Run simulation for one cycle. Invoked repetetively by run_simulation().
@@ -47,7 +47,7 @@ class Platform {
     void WriteToDatalog();
 
     /// \brief Create the report based on the statistical analysis using the simulated data.
-    void CreateReport(std::string simulation_init_time, float total_init_time_s, float total_runtime_s);
+    void CreateReport(std::time_t simulation_start_time_stamp, float total_init_time_s, float main_runtime_s);
 
     /// \brief The set of config parameters for the simulation platform.
     PlatformConfig platform_config_;

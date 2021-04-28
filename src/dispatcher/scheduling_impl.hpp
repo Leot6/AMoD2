@@ -174,13 +174,15 @@ void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &sc
     }
 
     // Update vehicle's status
-    vehicle.schedule_is_updated_at_current_epoch = true;
+    vehicle.schedule_has_been_updated_at_current_epoch = true;
     if (vehicle.schedule.size() > 0) {
         if (vehicle.schedule[0].op == WaypointOp::PICKUP || vehicle.schedule[0].op == WaypointOp::DROPOFF) {
             vehicle.status = VehicleStatus::WORKING;
         } else if (vehicle.schedule[0].op == WaypointOp::REPOSITION) {
             vehicle.status = VehicleStatus::REBALANCING;
             assert(vehicle.schedule.size() == 1);
+        } else {
+            assert(false && "Logical error! We should never reach this line of code!");
         }
     } else if (vehicle.schedule.size() == 0) {
         vehicle.status = VehicleStatus::IDLE;

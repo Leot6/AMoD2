@@ -40,7 +40,8 @@ std::vector<SchedulingResult> ComputeFeasibleVehicleTripPairs(const std::vector<
                                                               const std::vector<Order> &orders,
                                                               const std::vector<Vehicle> &vehicles,
                                                               uint64_t system_time_ms,
-                                                              RouterFunc &router_func);
+                                                              RouterFunc &router_func,
+                                                              int cutoff_time_for_a_size_k_trip_search_per_vehicle_ms);
 
 /// \brief Compute all possible trips for the given vehicle, along with the optimal schedule for each trip.
 /// \details All possible trips are computed incrementally for increasing ride-sharing trip sizes.
@@ -54,7 +55,8 @@ std::vector<SchedulingResult> ComputeFeasibleTripsForOneVehicle(const std::vecto
                                                                 const std::vector<Order> &orders,
                                                                 const Vehicle &vehicle,
                                                                 uint64_t system_time_ms,
-                                                                RouterFunc &router_func);
+                                                                RouterFunc &router_func,
+                                                                int cutoff_time_for_a_size_k_trip_search_ms);
 
 /// \brief Compute all possible size 1 trips for the given vehicle.
 /// \details Each element in the vector indicates a feasible assignment (insertion) of order to vehicle.
@@ -75,7 +77,8 @@ std::vector<SchedulingResult> ComputeSizeKTripsForOneVehicle(
         const std::vector<Order> &orders,
         const Vehicle &vehicle,
         uint64_t system_time_ms,
-        RouterFunc &router_func);
+        RouterFunc &router_func,
+        int cutoff_time_for_search_ms);
 
 /// \brief Get the basic schedules of the given vehicle, each of which only includes waypoints
 /// of dropping off onboard orders.

@@ -23,7 +23,7 @@ void TruncateStepByTime(Step &step, uint64_t time_ms) {
     assert(time_ms < step.duration_ms && "Ratio in truncate_step_by_time() must be within [0, 1)!");
 
     // Early return.
-    if (time_ms == step.duration_ms) {
+    if (time_ms == 0) {
         return;
     }
 
@@ -105,11 +105,41 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
     if (time_ms == 0) {
         return {new_picked_order_ids, new_dropped_order_ids};
     }
+    vehicle.schedule_has_been_updated_at_current_epoch = false;
 
+    // Move the vehicle's pos by step_to_pos, if it is not empty but the vehicle's schedule is empty.
+    // (This case is raised when the vehicle's assigned orders are reassigned to other vehicles and it becomes idle.)
+    if (vehicle.status == VehicleStatus::IDLE) {
+        if (vehicle.step_to_pos.duration_ms <= time_ms) {
+            if (update_vehicle_statistics) {
+                vehicle.dist_traveled_mm += vehicle.step_to_pos.distance_mm;
+                vehicle.time_traveled_ms += vehicle.step_to_pos.duration_ms;
+                vehicle.empty_dist_traveled_mm += vehicle.step_to_pos.distance_mm;
+                vehicle.empty_time_traveled_ms += vehicle.step_to_pos.duration_ms;
+            }
+            Step empty_step;
+            vehicle.step_to_pos = empty_step;
+        }
+        // If we can not finish this step_to_pos, truncate the step.
+        if (vehicle.step_to_pos.duration_ms > time_ms) {
+            const auto original_distance_mm = vehicle.step_to_pos.distance_mm;
+            TruncateStepByTime(vehicle.step_to_pos, time_ms);
+            const auto dist_traveled_mm = original_distance_mm - vehicle.step_to_pos.distance_mm;
+            if (update_vehicle_statistics) {
+                vehicle.dist_traveled_mm += dist_traveled_mm;
+                vehicle.time_traveled_ms += time_ms;
+                vehicle.empty_dist_traveled_mm += dist_traveled_mm;
+                vehicle.empty_time_traveled_ms += time_ms;
+            }
+        }
+        return {new_picked_order_ids, new_dropped_order_ids};
+    }
+
+    // Clear vehicle's step_to_pos to be prepared for the case when vehicle's pos is at a waypoint node.
     Step empty_step;
     vehicle.step_to_pos = empty_step;
-    vehicle.schedule_is_updated_at_current_epoch = false;
 
+    // Move the vehicle's pos by the schedule.
     for (auto i = 0; i < vehicle.schedule.size(); i++) {
         auto &wp = vehicle.schedule[i];
 
@@ -125,9 +155,13 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
                 vehicle.loaded_dist_traveled_mm += wp.route.distance_mm * vehicle.load;
                 vehicle.time_traveled_ms += wp.route.duration_ms;
                 vehicle.loaded_time_traveled_ms += wp.route.duration_ms * vehicle.load;
-                if (vehicle.load == 0) {
+                if (vehicle.status == VehicleStatus::WORKING && vehicle.load == 0) {
                     vehicle.empty_dist_traveled_mm += wp.route.distance_mm;
                     vehicle.empty_time_traveled_ms += wp.route.duration_ms;
+                }
+                if (vehicle.status == VehicleStatus::REBALANCING) {
+                    vehicle.rebl_dist_traveled_mm += wp.route.distance_mm;
+                    vehicle.rebl_time_traveled_ms += wp.route.duration_ms;
                 }
             }
 
@@ -196,6 +230,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
 
         vehicle.schedule.erase(vehicle.schedule.begin(), vehicle.schedule.begin() + i);
 
+        // As the vehicle is currently on a link, we store its unfinished step to step_to_pos.
         auto first_step_of_route = vehicle.schedule[0].route.steps[0];
         if (first_step_of_route.poses[0].node_id == first_step_of_route.poses[1].node_id) {
             assert (first_step_of_route.duration_ms != 0);

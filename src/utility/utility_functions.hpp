@@ -34,7 +34,7 @@ std::time_t getTimeStampMs();
 /// \brief A function to check whether the data file is existing.
 void CheckFileExistence(const std::string &path_to_file);
 
-/// \brief A function to print the schedule in terminal.
+/// \brief A function to print the schedule in console.
 void PrintSchedule(const Vehicle &vehicle, const std::vector<Waypoint> &schedule);
 
 /////// \brief A function saving data to a csv file.

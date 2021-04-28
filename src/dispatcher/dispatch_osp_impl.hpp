@@ -9,7 +9,6 @@
 #include <fmt/format.h>
 #undef NDEBUG
 #include <assert.h>
-//#include ""
 
 
 template <typename RouterFunc>
@@ -19,10 +18,17 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
                                                   uint64_t system_time_ms,
                                                   RouterFunc &router_func) {
     TIMER_START(t)
+
+    // Some general settings.
+    const bool consider_previous_unassigned_orders = true;
+    const bool ensure_assigning_orders_that_are_picking = true;
+        // 30 s is considered as a sufficient large value. If this cutoff time is set too small, it may happens that
+        // there are not enough feasible vehicle_trip_pairs found to support ensure_assigning_orders_that_are_picking.
+    const int cutoff_time_for_a_size_k_trip_search_per_vehicle_ms = 1000;  // normally set <= 30,000 ms
+
     // 1. Get the list of considered orders, normally including all picking and pending orders. But when the traffic
     // is deterministic, an order that cannot be served at last epoch is theoretically not servable at the current
     // epoch either. Then the list of considered orders is consisting of all picking and new received orders.
-    bool consider_previous_unassigned_orders = true;
     std::vector<size_t> considered_order_ids;
     for (auto &order: orders) {
         if (order.status == OrderStatus::PICKING) { considered_order_ids.push_back(order.id); }
@@ -40,13 +46,15 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
     }
 
     // 2. Compute all possible vehicle trip pairs, each indicating the orders in the trip can be served by the vehicle.
-    auto feasible_vehicle_trip_pairs = ComputeFeasibleVehicleTripPairs(considered_order_ids, orders, vehicles,
-                                                                         system_time_ms, router_func);
+    auto feasible_vehicle_trip_pairs =
+            ComputeFeasibleVehicleTripPairs(considered_order_ids, orders, vehicles, system_time_ms, router_func,
+                                            cutoff_time_for_a_size_k_trip_search_per_vehicle_ms);
 
     // 3. Compute the assignment policy, indicating which vehicle to pick which trip.
     std::sort(feasible_vehicle_trip_pairs.begin(), feasible_vehicle_trip_pairs.end(), SortVehicleTripPairs);
-    auto selected_vehicle_trip_pair_indices = IlpAssignment(feasible_vehicle_trip_pairs, considered_order_ids,
-                                                            orders, vehicles);
+    auto selected_vehicle_trip_pair_indices =
+            IlpAssignment(feasible_vehicle_trip_pairs, considered_order_ids, orders, vehicles,
+                          ensure_assigning_orders_that_are_picking);
 //    auto selected_vehicle_trip_pair_indices = GreedyAssignment(feasible_vehicle_trip_pairs);
 
     // 4. Update vehicles' schedules and assigned orders' statuses
@@ -59,28 +67,13 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
         UpdVehicleScheduleAndBuildRoute(vehicle, schedule, router_func);
     }
 
-//    fmt::print("(veh_id, trip_ids, cost_s)\n");
-//    for (auto i = 0; i < feasible_vehicle_trip_pairs.size(); i++) {
-//        auto &vt_pair = feasible_vehicle_trip_pairs[i];
-//        fmt::print("  -({}, {}, {})", vt_pair.vehicle_id, vt_pair.trip_ids,
-//                   vt_pair.best_schedule_cost_ms / 1000.0);
-//        if (std::find(selected_vehicle_trip_pair_indices.begin(), selected_vehicle_trip_pair_indices.end(),
-//                      i) != selected_vehicle_trip_pair_indices.end()) { fmt::print(" {}", i); }
-//        fmt::print("\n");
-//    }
-//    fmt::print("selected_vehicle_order_pair_indices {}\n", selected_vehicle_trip_pair_indices);
-
     // 5. Update schedule of vehicles, the assigned (picking) orders of which are reassigned to other vehicles.
     auto num_vehicles = vehicles.size();
     for (auto i = 0; i < num_vehicles; i++) {
         auto &vehicle = vehicles[i];
-        if (vehicle.schedule_is_updated_at_current_epoch) { continue; }
+        if (vehicle.schedule_has_been_updated_at_current_epoch) { continue; }
         if (vehicle.status == VehicleStatus::WORKING) {
             if (vehicle.schedule.size() == vehicle.load) { continue; }
-
-//            fmt::print("[DEBUG] onboard rids {}\n", vehicle.onboard_order_ids);
-//            PrintSchedule(vehicle, vehicle.schedule);
-
             std::vector<Waypoint> basic_schedule;
             auto pre_pos = vehicle.pos;
             for (auto wp : vehicle.schedule) {
@@ -91,7 +84,6 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
                     pre_pos = wp.pos;
                 }
             }
-//            PrintSchedule(vehicle, basic_schedule);
             UpdVehicleScheduleAndBuildRoute(vehicle, basic_schedule, router_func);
         }
     }
@@ -113,15 +105,17 @@ std::vector<SchedulingResult> ComputeFeasibleVehicleTripPairs(const std::vector<
                                                               const std::vector<Order> &orders,
                                                               const std::vector<Vehicle> &vehicles,
                                                               uint64_t system_time_ms,
-                                                              RouterFunc &router_func) {
+                                                              RouterFunc &router_func,
+                                                              int cutoff_time_for_a_size_k_trip_search_per_vehicle_ms) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
         fmt::print("                +Computing feasible vehicle trip pairs...");
     }
     std::vector<SchedulingResult> feasible_vehicle_trip_pairs;
     for (const auto &vehicle : vehicles) {
-        auto feasible_trips_for_this_vehicle = ComputeFeasibleTripsForOneVehicle(considered_order_ids, orders, vehicle,
-                                                                                 system_time_ms, router_func);
+        auto feasible_trips_for_this_vehicle =
+                ComputeFeasibleTripsForOneVehicle(considered_order_ids, orders, vehicle, system_time_ms, router_func,
+                                                  cutoff_time_for_a_size_k_trip_search_per_vehicle_ms);
         feasible_vehicle_trip_pairs.insert(feasible_vehicle_trip_pairs.end(),
                                            feasible_trips_for_this_vehicle.begin(),
                                            feasible_trips_for_this_vehicle.end());
@@ -138,7 +132,8 @@ std::vector<SchedulingResult> ComputeFeasibleTripsForOneVehicle(const std::vecto
                                                                 const std::vector<Order> &orders,
                                                                 const Vehicle &vehicle,
                                                                 uint64_t system_time_ms,
-                                                                RouterFunc &router_func) {
+                                                                RouterFunc &router_func,
+                                                                int cutoff_time_for_a_size_k_trip_search_ms) {
 
 //    if (DEBUG_PRINT) {
 //        fmt::print("                    +Computing feasible vehicle trip pairs for Vehicle #{}...\n",
@@ -162,9 +157,9 @@ std::vector<SchedulingResult> ComputeFeasibleTripsForOneVehicle(const std::vecto
     // Compute trips of size k (k > 1).
     std::vector<SchedulingResult> feasible_trips_of_size_k_minus_1 = feasible_trips_of_size_1;
     while(feasible_trips_of_size_k_minus_1.size() != 0) {
-        auto feasible_trips_of_size_k = ComputeSizeKTripsForOneVehicle(considered_order_ids,
-                                                                       feasible_trips_of_size_k_minus_1,
-                                                                       orders, vehicle, system_time_ms, router_func);
+        auto feasible_trips_of_size_k =
+                ComputeSizeKTripsForOneVehicle(considered_order_ids, feasible_trips_of_size_k_minus_1, orders, vehicle,
+                                               system_time_ms, router_func, cutoff_time_for_a_size_k_trip_search_ms);
         feasible_trips_for_this_vehicle.insert(feasible_trips_for_this_vehicle.end(),
                                                feasible_trips_of_size_k.begin(), feasible_trips_of_size_k.end());
         feasible_trips_of_size_k_minus_1 = feasible_trips_of_size_k;
@@ -211,10 +206,12 @@ std::vector<SchedulingResult> ComputeSizeKTripsForOneVehicle(
         const std::vector<Order> &orders,
         const Vehicle &vehicle,
         uint64_t system_time_ms,
-        RouterFunc &router_func) {
+        RouterFunc &router_func,
+        int cutoff_time_for_search_ms) {
 
     std::vector<SchedulingResult> feasible_trips_of_size_k;
     auto k = feasible_trips_of_size_k_minus_1[0].trip_ids.size() + 1;
+    auto search_start_time_ms = getTimeStampMs();
 //    if (DEBUG_PRINT) {
 //        fmt::print("                        +Computing size {} trip for Vehicle #{}...",
 //                   k, vehicle.id);
@@ -271,7 +268,9 @@ std::vector<SchedulingResult> ComputeSizeKTripsForOneVehicle(
                                      trip2_k_ids.begin(), trip2_k_ids.end()) &&
                        "trip2_k_ids should be a subset of considered_order_ids !");
             }
+            if (getTimeStampMs() - search_start_time_ms > cutoff_time_for_search_ms / 10.0) { break; }
         }
+        if (getTimeStampMs() - search_start_time_ms > cutoff_time_for_search_ms) { break; }
     }
 
 //    if (DEBUG_PRINT) {
@@ -321,7 +320,7 @@ std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vec
             new_basic_schedule.push_back(wp);
             pre_pos = wp.pos;
         }
-        // Terms "0, 0, orders[0]" here are useless, they are served as default values for the following function.
+        // Terms "0, 0, orders[0]" here are meaningless, they are served as default values for the following function.
         auto [feasible_this_schedule, violation_type] = ValidateSchedule(
                 new_basic_schedule, 0, 0, orders[0], orders, vehicle, system_time_ms, router_func);
         if (feasible_this_schedule) { basic_schedules.push_back(new_basic_schedule); }
@@ -330,3 +329,4 @@ std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vec
     assert(basic_schedules.size() > 0);
     return basic_schedules;
 }
+

@@ -11,7 +11,8 @@
 std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_trip_pairs,
                                   const std::vector<size_t> &considered_order_ids,
                                   const std::vector<Order> &orders,
-                                  const std::vector<Vehicle> &vehicles) {
+                                  const std::vector<Vehicle> &vehicles,
+                                  bool ensure_assigning_orders_that_are_picking) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
         fmt::print("                +ILP assignment with {} pairs...", vehicle_trip_pairs.size());
@@ -19,7 +20,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     std::vector<size_t> selected_vehicle_trip_pair_indices;
     if (vehicle_trip_pairs.size() == 0) { return selected_vehicle_trip_pair_indices; }
 
-    // Get the coefficients for vehicle_trip_pair cost and order ignore penalty
+    // Get the coefficients for vehicle_trip_pair cost and order ignore penalty.
     uint32_t max_cost_ms = 1;
     for (const auto &vt_pair :  vehicle_trip_pairs) {
         if (vt_pair.best_schedule_cost_ms > max_cost_ms) { max_cost_ms = vt_pair.best_schedule_cost_ms; }
@@ -31,12 +32,12 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     auto ignore_order_penalty_high = pow(10, 6);
 
     try {
-        // Create an environment
+        // Create an environment.
         GRBEnv env = GRBEnv(true);
         env.set("LogToConsole", "0");
         env.start();
 
-        // Create an empty model
+        // Create an empty model.
         GRBModel model = GRBModel(env);
 
         // Create variables (lower_bound, upper_bounds, objective_coefficient (zero here and set later), variable_type)
@@ -45,29 +46,29 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             var_vt_pair.push_back(model.addVar(0.0, 1.0, 0.0, GRB_BINARY,
                                           fmt::format("var_vt_pair_{}", i)));
         }
-        std::vector<GRBVar> var_order;  // var_order[j] = 1 indicates ignoring the i_th order in the list.
+        std::vector<GRBVar> var_order;  // var_order[j] = 0 indicates assigning the i_th order in the list.
         for (auto j = 0; j < considered_order_ids.size(); j++) {
             var_order.push_back(model.addVar(0.0, 1.0, 0.0, GRB_BINARY,
                                              fmt::format("var_order_{}", j)));
         }
 
-        // Set objective: minimize Σ var_vt_pair[i] * cost(vt_pair) + Σ var_order[j] * penalty_ignore
+        // Set objective: minimize Σ var_vt_pair[i] * cost(vt_pair) + Σ var_order[j] * penalty_ignore.
         GRBLinExpr obj = 0.0;
         for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
             obj += var_vt_pair[i] * vehicle_trip_pairs[i].best_schedule_cost_ms * coe_vt_pair;
         }
         for (auto j = 0; j < considered_order_ids.size(); j++) {
-            if (orders[considered_order_ids[j]].status == OrderStatus::PICKING) {
-                obj += var_order[j] * 1.0 * ignore_order_penalty_high;
-            }
-            else {
+            if (ensure_assigning_orders_that_are_picking &&
+                orders[considered_order_ids[j]].status == OrderStatus::PICKING) {
+                    obj += var_order[j] * 1.0 * ignore_order_penalty_high;
+            } else {
                 obj += var_order[j] * 1.0 * ignore_order_penalty;
             }
         }
         model.setObjective(obj, GRB_MINIMIZE);
 
-        // Add constraints
-        for (const auto &vehicle : vehicles) {  // Σ var_vt_pair[i] * Θ_vt(v) <= 1, ∀ v ∈ V (Θ_vt(v) = 1 if v is in vt)
+        // Add constraints.
+        for (const auto &vehicle : vehicles) {  // Σ var_vt_pair[i] * Θ_vt(v) <= 1, ∀ v ∈ V (Θ_vt(v) = 1 if v is in vt).
             GRBLinExpr con_this_vehicle = 0.0;
             for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
                 if (vehicle_trip_pairs[i].vehicle_id == vehicle.id) {
@@ -76,7 +77,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             }
             model.addConstr(con_this_vehicle <= 1);
         }
-        for (auto j = 0; j < considered_order_ids.size(); j++) { // Σ var_vt_pair[i] * Θ_vt(order) + var_order[j] = 1
+        for (auto j = 0; j < considered_order_ids.size(); j++) { // Σ var_vt_pair[i] * Θ_vt(order) + var_order[j] = 1.
             GRBLinExpr con_this_order = 0.0;
             const auto &order = orders[considered_order_ids[j]];
             for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
@@ -89,30 +90,22 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             model.addConstr(con_this_order == 1);
         }
 
-        // Optimize model
+        // Optimize model.
         model.optimize();
 
         for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
             if (var_vt_pair[i].get(GRB_DoubleAttr_X) == 1){ selected_vehicle_trip_pair_indices.push_back(i); }
-//            if (DEBUG_PRINT) {
-//                fmt::print("{} {} (cost {})\n",
-//                           var_vt_pair[i].get(GRB_StringAttr_VarName),
-//                           var_vt_pair[i].get(GRB_DoubleAttr_X),
-//                           vehicle_trip_pairs[i].best_schedule_cost_ms * coe_vt_pair);
-//            }
-
         }
-//        if (DEBUG_PRINT) { fmt::print("Obj: {}\n", model.get(GRB_DoubleAttr_ObjVal)); }
 
-    // Check the results of orders
-    for (auto j = 0; j < considered_order_ids.size(); j++) {
-        if (orders[considered_order_ids[j]].status == OrderStatus::PICKING) {
-            if (var_order[j].get(GRB_DoubleAttr_X) == 1) {
-                fmt::print("var_order[{}] {} \n", j, var_order[j].get(GRB_DoubleAttr_X));
+        // Check the results of orders
+        if (ensure_assigning_orders_that_are_picking) {
+            for (auto j = 0; j < considered_order_ids.size(); j++) {
+                if (orders[considered_order_ids[j]].status == OrderStatus::PICKING) {
+                    assert(var_order[j].get(GRB_DoubleAttr_X) == 0
+                           && "Order that was picking is not assigned at this epoch!");
+                }
             }
-            assert(var_order[j].get(GRB_DoubleAttr_X) == 0 && "Order that was picking is not assigned at this epoch!");
         }
-    }
 
     } catch(GRBException e) {
         std::cout << "Error code = " << e.getErrorCode() << std::endl;
