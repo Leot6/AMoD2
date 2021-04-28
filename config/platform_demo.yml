@@ -16,7 +16,7 @@ area_config:
   lat_max: 40.8825
 mod_system_config:
   dispatch_config:
-    dispatcher: "OSP"   # 3 options: GI, SBA, OSP
+    dispatcher: "SBA"   # 3 options: GI, SBA, OSP
     rebalancer: "NR"   # 2 options: NR (naive rebalancer), NONE
 #    rebalancer: "NONE"
   fleet_config:
@@ -31,8 +31,8 @@ simulation_config:
   simulation_start_time: "2016-05-25 18:30:00"
   cycle_s: 30
   warmup_duration_min: 30        # 30 min
-  simulation_duration_min: 60   # < 1380 min
-  winddown_duration_min: 30      # 30 min
+  simulation_duration_min: 60   # < 1371 min
+  winddown_duration_min: 39      # 39 min
 #  debug_print: true
   debug_print: false
 output_config:
