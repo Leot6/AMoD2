@@ -58,9 +58,9 @@ add_executable(main src/main.cpp)
 target_link_libraries(main mod-abm-lib)
 target_compile_features(main PRIVATE cxx_std_17)
 
-add_executable(test_gitignore src/test_gitignore.cpp)
-target_link_libraries(test_gitignore mod-abm-lib)
-target_compile_features(test_gitignore PRIVATE cxx_std_17)
+add_executable(test src/test.cpp)
+target_link_libraries(test mod-abm-lib)
+target_compile_features(test PRIVATE cxx_std_17)
 
 ########################################################################
 # Fetch Other Third-Party Libraries
