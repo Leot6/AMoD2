@@ -37,6 +37,8 @@ Or:
 ```
 
 ### Code File Structure
+<img src="https://github.com/Leot6/AMoD2/blob/main/doc/code%20file%20structure.png" width="720">
+
 
 ### Dependencies
 
