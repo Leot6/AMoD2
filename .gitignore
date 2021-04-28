@@ -31,4 +31,4 @@ media-gitignore/
 
 # others
 .idea
-test/
+test_gitignore.cpp
