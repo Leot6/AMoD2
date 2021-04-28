@@ -56,7 +56,7 @@ brew install git
 brew install cmake python ffmpeg
 brew install boost libzip libxml2 tbb ccache GDAL
 ```
-Then install `gurobi` working as an ILP solver, please refer to the [Gurobi officical website](https://www.gurobi.com/downloads/) and download the suitable Gurobi Optimizer according to your operation system. (Do not forget to change the directory/version info of `gurobi` in `CMakeLists.txt`.) You can also use other optimization solvers, such as [CPLEX](https://www.ibm.com/analytics/cplex-optimizer), [SCIP](https://www.scipopt.org/)(non-commercial), [CLP](https://github.com/coin-or/Clp)(non-commercial). ([BENCHMARKS FOR OPTIMIZATION SOFTWARE](http://plato.asu.edu/bench.html) could help choosing solver.)
+Finially install `gurobi` working as an ILP solver, please refer to the [Gurobi officical website](https://www.gurobi.com/downloads/) and download the suitable Gurobi Optimizer according to the operation system. (Do not forget to change the directory/version info of `gurobi` in `CMakeLists.txt`.) Other optimization solvers will also work, such as [CPLEX](https://www.ibm.com/analytics/cplex-optimizer), [SCIP](https://www.scipopt.org/)(non-commercial) and [CLP](https://github.com/coin-or/Clp)(non-commercial). ([BENCHMARKS FOR OPTIMIZATION SOFTWARE](http://plato.asu.edu/bench.html) could help choosing solver.)
 
 AMoD2 can run without the ILP solver, simply using function `GreedyAssignment(...)` to replace function `IlpAssignment(...)` (used in `dispatche_sba_impl.hpp` and `dispatche_osp_impl.hpp`), and commenting the codes related to `gurobi` in `ilp_assign.cpp` and `CMakeLists.txt`. Do note that using `GreedyAssignment(...)` surely will yield worse performance.
 
