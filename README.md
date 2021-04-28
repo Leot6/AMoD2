@@ -8,34 +8,6 @@ An autonomous mobility-on-demand simulator, based on [mod-abm-2.0](https://githu
   - Naive rebanlancer (NR) [[4]](https://github.com/Leot6/AMoD#references): It reposition idle vehicles to the locations of unassigned orders, under the assumption that it is likely that more requests occur in the same area where all requests cannot be satisfied.
 
 
-### Build `AMoD2`
-
-To run a simulation, download data files from [this onedrive link](https://1drv.ms/u/s!AsqflzzqZj9qg-8-rT_CpBIZhc2pzw?e=TtYGfD) or [this google drive link](https://drive.google.com/drive/folders/1Q0ZK3c8B8tjd7vO5UsgKXCJPDVr8mGVt?usp=sharing), and put the downloaded folders in the root directory.
-```
-|-- AMoD2
-   |-- datalog-gitignore
-   |-- media-gitignore
-```
-
-To configure the build system, run once:
-```
-cmake -S . -B build
-```
-Future builds can be run as simply as:
-```
-cmake --build build
-```
-
-Once the build is complete, try the exmaple command line that runs the demo simulation:
-```
-./build/main
-```
-Or:
-
-```
-./build/main "./config/platform_demo.yml"
-```
-
 ### An Example Simulation Result
 The following simulation result is from a senariao with 400k requests during the whole day. A 30 mins warm up phase and a 30 mins cool down phase are considered.
 ```
@@ -66,6 +38,39 @@ The following simulation result is from a senariao with 400k requests during the
   - Rebl Travel: avg_time = 61.60 s (0.09%), avg_dist = 1.92 km (0.54%).
   - Load: average_load_dist = 1.85, average_load_time = 1.97.
 -------------------------------------------------------------------------------------------------
+```
+
+
+### Build `AMoD2`
+
+To run a simulation, download data files from [this onedrive link](https://1drv.ms/u/s!AsqflzzqZj9qg-8-rT_CpBIZhc2pzw?e=TtYGfD) or [this google drive link](https://drive.google.com/drive/folders/1Q0ZK3c8B8tjd7vO5UsgKXCJPDVr8mGVt?usp=sharing), and put the downloaded folders in the root directory.
+```
+|-- AMoD2
+   |-- datalog-gitignore
+   |-- media-gitignore
+```
+
+To configure the build system, run once:
+```
+cmake -S . -B build
+```
+Future builds can be run as simply as:
+```
+cmake --build build
+```
+
+Once the build is complete, try the exmaple command line that runs the demo simulation:
+```
+./build/main
+```
+Or:
+```
+./build/main "./config/platform_demo.yml"
+```
+
+If two flags, `output_datalog` and `render_video`, in platform config (a `.yml` file) are turned on, then the statuses of vehicles and orders are outputed at `datalog/demo.yml`, which can be processed to generate animation video by:
+```
+python3 ./python/fetch_map.py
 ```
 
 ### Code File Structure
