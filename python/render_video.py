@@ -14,7 +14,7 @@ import datetime
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # Dots per inch, represents the dot density in the output video.
-DPI = 200
+DPI = 100
 
 
 def load_config(path_to_config_file):
@@ -115,7 +115,7 @@ def main():
         lon_min, lon_max, lat_min, lat_max))
 
     # Load background image.
-    map_image_file_path = root_path + "/media-gitignore/manhattan.png"
+    map_image_file_path = root_path + "/doc/manhattan.jpg"
     img = Image.open(map_image_file_path)
     w, h = img.size
 
