@@ -87,20 +87,23 @@ def get_color(id):
 
 def main():
     stime = time.time()
-    # # Check command line arguments.
-    # if (len(sys.argv) != 3):
-    #     print("[ERROR] We need exact 2 arguments aside from the program name for correct execution! \n"
-    #           "- Usage: python3 <prog name> <arg1> <arg2>. \n"
-    #           "  <arg1> is the path to the platform config file. \n"
-    #           "  <arg2> is the path to the background map image. \n"
-    #           "- Example: python3 {} \"./config/platform_demo.yml\" \"./media/hongkong.png\"\n".format(sys.argv[0]))
-    #     sys.exit(1)
-    #
 
-    # config = load_config(sys.argv[1])
+    # Check command line arguments.
+    if len(sys.argv) == 1:
+        config_file_local_path = "./config/platform_demo.yml"
+    elif len(sys.argv) == 2:
+        config_file_local_path = sys.argv[1]
+    else:
+        print("[ERROR] Wrong argument aside from the program name for correct execution! \n"
+              "- Usage: python3 <prog name> <arg1>. \n"
+              "  <arg1> is the path to the platform config file. \n"
+              "- Example: python3 {} \"./config/platform_demo.yml\"\n".format(sys.argv[0]))
+        sys.exit(1)
+    if config_file_local_path.startswith('.'):
+        config_file_local_path = config_file_local_path[1:]
 
     # Load config.
-    config_file_path = root_path + "/config/platform_demo.yml"
+    config_file_path = root_path + config_file_local_path
     config = load_config(config_file_path)
 
     print("Loaded the config from {}.".format(config_file_path))
@@ -164,20 +167,20 @@ def main():
             [], [], 'X', color='darkred', marker='X', markersize=6, alpha=0.8)[0]
 
         # A text box
-        text = ax.text(0.05 * w, 0.05 * h, "text", horizontalalignment='left', verticalalignment='bottom', fontsize=13,
+        text = ax.text(0.05 * w, 0.05 * h, "text", horizontalalignment='left', verticalalignment='bottom', fontsize=20,
                        bbox=dict(facecolor='white', edgecolor='grey', boxstyle='round', alpha=0.7))
 
         for id in range(num_vehs):
             # Get the color of the current vehicle. We only color the first 5 vehicles for visibility.
             color = get_color(id)
             vehs.append(ax.plot([], [], color=color,
-                                marker='o', markersize=3, alpha=0.8)[0])
+                                marker='o', markersize=5.5, alpha=0.8)[0])
             wp0.append(ax.plot([], [], linestyle='-',
-                               linewidth=0.7, color=color, alpha=0.2)[0])
+                               linewidth=1, color=color, alpha=0.2)[0])
             wp1.append(ax.plot([], [], linestyle='-',
-                               linewidth=0.7, color=color, alpha=0.2)[0])
+                               linewidth=1, color=color, alpha=0.2)[0])
             wp2.append(ax.plot([], [], linestyle='-',
-                               linewidth=0.7, color=color, alpha=0.2)[0])
+                               linewidth=1, color=color, alpha=0.2)[0])
 
         def init():
             return vehs, wp0, wp1, wp2, dispatched_orders, walked_away_orders, text

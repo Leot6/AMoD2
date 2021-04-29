@@ -64,16 +64,20 @@ cmake --build build
 
 Once the build is complete, try the exmaple command line that runs the demo simulation:
 ```
+# load the default config file
 ./build/main
-```
-Or:
-```
+
+# or specify a config file
 ./build/main "./config/platform_demo.yml"
 ```
 
 If two flags, `output_datalog` and `render_video`, in platform config (a `.yml` file) are turned on, then the statuses of vehicles and orders are outputed at `datalog/demo.yml`, which can be processed to generate animation video by:
 ```
-python3 ./python/fetch_map.py
+# load the default config file
+python3 ./python/render_video.py
+
+# or specify a config file
+python3 ./python/render_video.py "./config/platform_demo.yml"
 ```
 
 ### Code File Structure
