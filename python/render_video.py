@@ -61,17 +61,26 @@ def convert_to_x_and_y(pos, lon_min, lon_max, lat_min, lat_max, w, h):
 def get_color(id):
     """Get color of vehicle given its id. We only color the first five vehicles."""
 
-    color = "0.50"
-    if id == 0:
-        color = "#dc241f"
-    elif id == 1:
-        color = "#9b0058"
-    elif id == 2:
-        color = "#0019a8"
-    elif id == 3:
-        color = "#0098d8"
-    elif id == 4:
-        color = "#b26300"
+    color = "#F6BB36"
+    # if id == 0:
+    #     color = "#dc241f"
+    # elif id == 1:
+    #     color = "#9b0058"
+    # elif id == 2:
+    #     color = "#0019a8"
+    # elif id == 3:
+    #     color = "#0098d8"
+    # elif id == 4:
+    #     color = "#b26300"
+
+    # if dispatcher == 'OSP':
+    #     veh_route_color = '#F6BB36'
+    # elif dispatcher == 'RTV':
+    #     veh_route_color = '#25A1FA'
+    # elif dispatcher == 'SBA':
+    #     veh_route_color = '#8FE37C'
+    # elif dispatcher == 'GI':
+    #     veh_route_color = '#FB6454'
 
     return color
 
@@ -162,13 +171,13 @@ def main():
             # Get the color of the current vehicle. We only color the first 5 vehicles for visibility.
             color = get_color(id)
             vehs.append(ax.plot([], [], color=color,
-                                marker='o', markersize=5, alpha=1)[0])
+                                marker='o', markersize=3, alpha=0.8)[0])
             wp0.append(ax.plot([], [], linestyle='-',
-                               linewidth=1, color=color, alpha=0.7)[0])
-            wp1.append(ax.plot([], [], linestyle='--',
-                               linewidth=1, color=color, alpha=0.7)[0])
-            wp2.append(ax.plot([], [], linestyle=':',
-                               linewidth=1, color=color, alpha=0.7)[0])
+                               linewidth=0.7, color=color, alpha=0.2)[0])
+            wp1.append(ax.plot([], [], linestyle='-',
+                               linewidth=0.7, color=color, alpha=0.2)[0])
+            wp2.append(ax.plot([], [], linestyle='-',
+                               linewidth=0.7, color=color, alpha=0.2)[0])
 
         def init():
             return vehs, wp0, wp1, wp2, dispatched_orders, walked_away_orders, text
@@ -235,24 +244,24 @@ def main():
 
                         if order["status"] != "WALKAWAY":
                             accepted_orders_count += 1
-                        if order["status"] == "DROPPED_OFF":
+                        if order["status"] == "COMPLETE":
                             completed_orders_count += 1
 
-                        if order["status"] == "WALKAWAY":
-                            if order["request_time_ms"] >= system_time_ms - frame_interval_ms:
-                                x, y = convert_to_x_and_y(
-                                    order["origin"], lon_min, lon_max, lat_min, lat_max, w, h)
-                                walked_away_orders_xs.append(x)
-                                walked_away_orders_ys.append(y)
-                        elif order["status"] == "DISPATCHED":
-                            x, y = convert_to_x_and_y(
-                                order["origin"], lon_min, lon_max, lat_min, lat_max, w, h)
-                            dispatched_orders_xs.append(x)
-                            dispatched_orders_ys.append(y)
+                        # if order["status"] == "WALKAWAY":
+                        #     if order["request_time_ms"] >= system_time_ms - frame_interval_ms:
+                        #         x, y = convert_to_x_and_y(
+                        #             order["origin"], lon_min, lon_max, lat_min, lat_max, w, h)
+                        #         walked_away_orders_xs.append(x)
+                        #         walked_away_orders_ys.append(y)
+                        # elif order["status"] == "PICKING":
+                        #     x, y = convert_to_x_and_y(
+                        #         order["origin"], lon_min, lon_max, lat_min, lat_max, w, h)
+                        #     dispatched_orders_xs.append(x)
+                        #     dispatched_orders_ys.append(y)
 
-            dispatched_orders.set_data(dispatched_orders_xs, dispatched_orders_ys)
-            walked_away_orders.set_data(
-                walked_away_orders_xs, walked_away_orders_ys)
+            # dispatched_orders.set_data(dispatched_orders_xs, dispatched_orders_ys)
+            # walked_away_orders.set_data(
+            #     walked_away_orders_xs, walked_away_orders_ys)
 
             # Render text.
             min, sec = divmod(simulation_start_time_s + system_time_ms / 1000, 60)
@@ -267,14 +276,12 @@ def main():
 
             return vehs, wp0, wp1, wp2, dispatched_orders, walked_away_orders, text
 
-        anime = animation.FuncAnimation(
-            fig, animate, init_func=init, frames=num_frames)
+        anime = animation.FuncAnimation(fig, animate, init_func=init, frames=num_frames)
 
         # Set up formatting for the movie file and write.
         path_to_output_video = root_path + config["output_config"]["video_config"]["path_to_output_video"]
         Writer = animation.writers['ffmpeg']
-        writer = Writer(fps=fps, metadata=dict(
-            artist='mod-abm-2.0'), bitrate=1800)
+        writer = Writer(fps=fps, bitrate=1800)
         anime.save(path_to_output_video, writer=writer)
 
         print("[INFO] ({}s) Video saved at {}. Duration={}, FPS={}, DPI={}.".format(round(time.time()-stime, 2),

@@ -12,8 +12,8 @@
 class Router {
   public:
     /// \brief Constructor.
-    explicit Router(std::string _path_to_vehicle_stations,
-                    std::string _path_to_network_nodes,
+    explicit Router(std::string _path_to_network_nodes,
+                    std::string _path_to_vehicle_stations,
                     std::string _path_to_shortest_path_table,
                     std::string _path_to_mean_travel_time_table,
                     std::string _path_to_travel_distance_table);

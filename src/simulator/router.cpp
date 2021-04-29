@@ -10,14 +10,14 @@
 #include <algorithm>
 #include <iostream>
 
-Router::Router(std::string _path_to_vehicle_stations,
-               std::string _path_to_network_nodes,
+Router::Router(std::string _path_to_network_nodes,
+               std::string _path_to_vehicle_stations,
                std::string _path_to_shortest_path_table,
                std::string _path_to_mean_travel_time_table,
                std::string _path_to_travel_distance_table) {
     TIMER_START(t)
-    vehicle_stations_ = LoadNetworkNodesFromCsvFile(_path_to_vehicle_stations);
     network_nodes_ = LoadNetworkNodesFromCsvFile(_path_to_network_nodes);
+    vehicle_stations_ = LoadNetworkNodesFromCsvFile(_path_to_vehicle_stations);
     shortest_path_table_ = LoadShortestPathTableFromCsvFile(_path_to_shortest_path_table);
     mean_travel_time_table_ = LoadMeanTravelTimeTableFromCsvFile(_path_to_mean_travel_time_table);
     travel_distance_table_ = LoadMeanTravelTimeTableFromCsvFile(_path_to_travel_distance_table);
@@ -37,10 +37,10 @@ Route Router::operator()(const Pos &origin, const Pos &destination, RoutingType 
     }
 
     if (type == RoutingType::FULL_ROUTE) {
-        // build the simple node path from the shortest path table
+        // Build the simple node path from the shortest path table.
         std::vector<size_t> path;
         path.push_back(dnid);
-        // we use int here because some value in the shortest_path_table is -1
+        // We use int here because some value in the shortest_path_table is -1.
         int pre_node = shortest_path_table_[onid - 1][dnid - 1];
         while (pre_node > 0) {
             path.push_back(pre_node);
@@ -48,7 +48,7 @@ Route Router::operator()(const Pos &origin, const Pos &destination, RoutingType 
         }
         std::reverse(path.begin(), path.end());
 
-        // build the detailed route from the path
+        // Build the detailed route from the path.
         for (int i = 0; i < path.size()-1; i++) {
             Step step;
             size_t u = path[i];
@@ -63,7 +63,7 @@ Route Router::operator()(const Pos &origin, const Pos &destination, RoutingType 
             route.steps.push_back(step);
         }
 
-        // the last step of a route is always consisting of 2 identical points as a flag of the end of the leg
+        // The last step of a route is always consisting of 2 identical points as a flag of the end of the leg.
         Step flag_step;
         flag_step.distance_mm = 0;
         flag_step.duration_ms = 0;
@@ -71,7 +71,7 @@ Route Router::operator()(const Pos &origin, const Pos &destination, RoutingType 
         flag_step.poses.push_back(getNodePos(dnid));
         route.steps.push_back(flag_step);
 
-        // check the accuracy of routing
+        // Check the accuracy of routing.
         int deviation_due_to_data_structure = 5;
         assert(abs(route.duration_ms - mean_travel_time_table_[onid - 1][dnid - 1] * 1000)
                <= deviation_due_to_data_structure);
@@ -122,7 +122,6 @@ std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv) {
 
 std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
-    auto s_time_ms = getTimeStampMs();
     std::vector<std::vector<int>> shortest_path_table;
     using namespace csv;
     csv::CSVReader csv_reader(path_to_csv);
@@ -145,7 +144,6 @@ std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_
 
 std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
-    auto s_time_ms = getTimeStampMs();
     std::vector<std::vector<float>> mean_travel_time_table;
     using namespace csv;
     csv::CSVReader csv_reader(path_to_csv);
