@@ -1,4 +1,6 @@
 # `AMoD2`
+<img src="https://github.com/Leot6/AMoD2/blob/main/doc/demo-100vehs.gif" width="480">
+
 An autonomous mobility-on-demand simulator, based on [mod-abm-2.0](https://github.com/wenjian0202/mod-abm-2.0). This simulator uses map data and taxi data from Manhattan. Three vehicle dispatch algorithms and one simple rebalancing algorithm are implemented.
 - Dispatcher
     - Greedy Insertion (GR) [[1]](https://github.com/Leot6/AMoD#references): It assigns orders sequentially to the best available vehicle in a first-in-first-out manner (i.e., an exhaustive version of [[2]](https://github.com/Leot6/AMoD#references)).
@@ -74,7 +76,7 @@ python3 ./python/fetch_map.py
 ```
 
 ### Code File Structure
-<img src="https://github.com/Leot6/AMoD2/blob/main/doc/code%20file%20structure.png" width="720">
+<img src="https://github.com/Leot6/AMoD2/blob/main/doc/code-file-structure.png" width="720">
 
 
 ### Dependencies
