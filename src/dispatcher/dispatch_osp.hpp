@@ -8,8 +8,8 @@
 
 
 /// \brief Assign the new received orders to the vehicles using multi-request Batch Assignment.
-/// \details Optimal Schedule Pool assignment (OSP): takes all picking and pending orders for a batch period and
-/// assigns them together in a multi-to-one match manner, where multiple orders (denoted by trip) are assigned to a
+/// \details Optimal Schedule Pool assignment (OSP): takes all picking and pending orders received so far and assign
+/// them together in a multi-to-one match manner, where multiple orders (denoted by a trip) are assigned to a
 /// single vehicle and trips are allowed to be reassigned to different vehicles for better system performance. OSP is
 /// an improved version of Request Trip Vehicle (RTV) assignment, it computes all possible vehicle-trip pairs along
 /// with the optimal schedule of each pair. The computation of the optimal schedule ensures that no pair is mistakenly
