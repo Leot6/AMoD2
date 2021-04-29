@@ -1,7 +1,8 @@
 # `AMoD2`
-<img src="https://github.com/Leot6/AMoD2/blob/main/doc/demo-100vehs.gif" width="480">
+<img src="https://github.com/Leot6/AMoD2/blob/main/doc/demo-100vehs.gif" width="300">
 
-An autonomous mobility-on-demand simulator, based on [mod-abm-2.0](https://github.com/wenjian0202/mod-abm-2.0). This simulator uses map data and taxi data from Manhattan. Three vehicle dispatch algorithms and one simple rebalancing algorithm are implemented.
+An autonomous mobility-on-demand simulator, based on [mod-abm-2.0](https://github.com/wenjian0202/mod-abm-2.0). This simulator uses map data and taxi data from Manhattan. Three vehicle dispatch algorithms and one simple rebalancing algorithm are implemented. (The illustration above shows an example instance with 100 vehicles and 2574 orders received in an hour.)
+
 - Dispatcher
     - Greedy Insertion (GR) [[1]](https://github.com/Leot6/AMoD#references): It assigns orders sequentially to the best available vehicle in a first-in-first-out manner (i.e., an exhaustive version of [[2]](https://github.com/Leot6/AMoD#references)).
     - Single-Request Batch Assignment (SBA) [[3]](https://github.com/Leot6/AMoD#references): It takes the new orders for a batch period and assigns them together in a one-to-one match manner, where at most one new order is assigned to a single vehicle.
