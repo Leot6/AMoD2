@@ -29,7 +29,7 @@ simulation_config:
   simulation_start_time: "2016-05-25 00:00:00"  # peak hour: 18:00:00 - 20:00:00
   cycle_s: 30
   warmup_duration_min: 30        # 30 min
-  simulation_duration_min: 60   # < 1371 min
+  simulation_duration_min: 1370   # < 1371 min
   winddown_duration_min: 39      # 39 min
   debug_print: false
 output_config:

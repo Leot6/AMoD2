@@ -553,12 +553,12 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
     // Report vehicle status.
     uint64_t total_dist_traveled_mm = 0;
     uint64_t total_loaded_dist_traveled_mm = 0;
-    uint32_t total_empty_dist_traveled_mm = 0;
-    uint32_t total_rebl_dist_traveled_mm = 0;
+    uint64_t total_empty_dist_traveled_mm = 0;
+    uint64_t total_rebl_dist_traveled_mm = 0;
     uint64_t total_time_traveled_ms = 0;
     uint64_t total_loaded_time_traveled_ms = 0;
-    uint32_t total_empty_time_traveled_ms = 0;
-    uint32_t total_rebl_time_traveled_ms = 0;
+    uint64_t total_empty_time_traveled_ms = 0;
+    uint64_t total_rebl_time_traveled_ms = 0;
 
     for (const auto &vehicle : vehicles_) {
         total_dist_traveled_mm += vehicle.dist_traveled_mm;
