@@ -14,7 +14,7 @@ An autonomous mobility-on-demand simulator, based on [mod-abm-2.0](https://githu
 ### An Example Simulation Result
 The following simulation result is from a senariao with 400k requests during the whole day. A 30 mins warm up phase and a 30 mins cool down phase are considered.
 ```
-[INFO] Loaded the platform configuration yaml file from /Users/leot/CLionProjects/AMoD2/config/platform_demo.yml.
+[INFO] Loaded the platform configuration yaml file from AMoD2/config/platform_demo.yml.
 [INFO] Router is ready.  (6.049s)
 [INFO] Demand Generator is ready.  (2.043s)
 [INFO] Platform is ready.
