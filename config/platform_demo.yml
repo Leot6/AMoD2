@@ -18,29 +18,26 @@ mod_system_config:
   dispatch_config:
     dispatcher: "SBA"   # 3 options: GI, SBA, OSP
     rebalancer: "NR"   # 2 options: NR (naive rebalancer), NONE
-#    rebalancer: "NONE"
   fleet_config:
-    fleet_size: 200
+    fleet_size: 2000
     veh_capacity: 6
   request_config:
-    request_density: 0.1    # <= 1
+    request_density: 1    # <= 1
     max_pickup_wait_time_min: 5
     max_onboard_detour: 1.3
 simulation_config:
-#  simulation_start_time: "2016-05-25 00:00:00"  # peak hour: 18:00:00 - 20:00:00
-  simulation_start_time: "2016-05-25 18:00:00"
+  simulation_start_time: "2016-05-25 00:00:00"  # peak hour: 18:00:00 - 20:00:00
   cycle_s: 30
-  warmup_duration_min: 0        # 30 min
-  simulation_duration_min: 10   # < 1371 min
-  winddown_duration_min: 0      # 39 min
-#  debug_print: true
+  warmup_duration_min: 30        # 30 min
+  simulation_duration_min: 60   # < 1371 min
+  winddown_duration_min: 39      # 39 min
   debug_print: false
 output_config:
   datalog_config:
-    output_datalog: true
+    output_datalog: false
     path_to_output_datalog: "/datalog-gitignore/demo.yml"
   video_config:
-    render_video: true   # this requires output_datalog = true
+    render_video: false   # this requires output_datalog = true
     path_to_output_video: "/media-gitignore/demo.mp4"
     frames_per_cycle: 3  # frame_length = cycle_s / frames_per_cycle (higher frames yields slower speed and longer video)
                          # total frames = simulation_duration_min * 60 / frame_length

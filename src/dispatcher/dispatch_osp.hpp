@@ -35,13 +35,15 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
 /// \param vehicles A vector of all vehicles.
 /// \param system_time_ms The current system time.
 /// \tparam router_func The router func that finds path between two poses.
+/// \param cutoff_time_for_a_size_k_trip_search_per_vehicle_ms A time out setting to prevent potential dead loop.
 template <typename RouterFunc>
 std::vector<SchedulingResult> ComputeFeasibleVehicleTripPairs(const std::vector<size_t> &considered_order_ids,
                                                               const std::vector<Order> &orders,
                                                               const std::vector<Vehicle> &vehicles,
                                                               uint64_t system_time_ms,
                                                               RouterFunc &router_func,
-                                                              int cutoff_time_for_a_size_k_trip_search_per_vehicle_ms);
+                                                              int cutoff_time_for_a_size_k_trip_search_per_vehicle_ms,
+                                                              bool enable_reoptimization);
 
 /// \brief Compute all possible trips for the given vehicle, along with the optimal schedule for each trip.
 /// \details All possible trips are computed incrementally for increasing ride-sharing trip sizes.
@@ -56,7 +58,8 @@ std::vector<SchedulingResult> ComputeFeasibleTripsForOneVehicle(const std::vecto
                                                                 const Vehicle &vehicle,
                                                                 uint64_t system_time_ms,
                                                                 RouterFunc &router_func,
-                                                                int cutoff_time_for_a_size_k_trip_search_ms);
+                                                                int cutoff_time_for_a_size_k_trip_search_ms,
+                                                                bool enable_reoptimization);
 
 /// \brief Compute all possible size 1 trips for the given vehicle.
 /// \details Each element in the vector indicates a feasible assignment (insertion) of order to vehicle.
@@ -86,7 +89,8 @@ template <typename RouterFunc>
 std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vector<Order> &orders,
                                                                   const Vehicle &vehicle,
                                                                   uint64_t system_time_ms,
-                                                                  RouterFunc &router_func);
+                                                                  RouterFunc &router_func,
+                                                                  bool enable_reoptimization);
 
 
 // Implementation is put in a separate file for clarity and maintainability.
