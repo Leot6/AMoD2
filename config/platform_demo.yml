@@ -9,6 +9,7 @@ data_file_path:
   mean_travel_time_table: "/datalog-gitignore/map-data/mean-table.csv"
   travel_distance_table: "/datalog-gitignore/map-data/dist-table.csv"
   taxi_data: "/datalog-gitignore/taxi-data/manhattan-taxi-20160525-400k.csv"
+  background_map_image: "/media-gitignore/manhattan.jpg"
 area_config: 
   lon_min: -74.0300
   lon_max: -73.9030

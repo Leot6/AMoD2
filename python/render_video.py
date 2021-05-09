@@ -91,14 +91,16 @@ def main():
     # Check command line arguments.
     if len(sys.argv) == 1:
         config_file_local_path = "./config/platform_demo.yml"
-    elif len(sys.argv) == 2:
-        config_file_local_path = sys.argv[1]
-    else:
+    elif len(sys.argv) != 2:
         print("[ERROR] Wrong argument aside from the program name for correct execution! \n"
-              "- Usage: python3 <prog name> <arg1>. \n"
+              "- Usage: python3 <prog name> (loading the default config) or python3 <prog name> <arg1>. \n"
               "  <arg1> is the path to the platform config file. \n"
-              "- Example: python3 {} \"./config/platform_demo.yml\"\n".format(sys.argv[0]))
+              "- Example: python3 {} \n"
+              "       or: python3 {} \"./config/platform_demo.yml\" \n".format(sys.argv[0], sys.argv[0]))
         sys.exit(1)
+    else:
+        config_file_local_path = sys.argv[1]
+
     if config_file_local_path.startswith('.'):
         config_file_local_path = config_file_local_path[1:]
 
@@ -118,7 +120,7 @@ def main():
         lon_min, lon_max, lat_min, lat_max))
 
     # Load background image.
-    map_image_file_path = root_path + "/doc/manhattan.jpg"
+    map_image_file_path = root_path + config["data_file_path"]["background_map_image"]
     img = Image.open(map_image_file_path)
     w, h = img.size
 

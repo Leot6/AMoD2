@@ -71,7 +71,7 @@ Once the build is complete, try the exmaple command line that runs the demo simu
 ./build/main "./config/platform_demo.yml"
 ```
 
-If two flags, `output_datalog` and `render_video`, in platform config (a `.yml` file) are turned on, then the statuses of vehicles and orders are outputed at `datalog/demo.yml`, which can be processed to generate animation video by:
+If two flags, `output_datalog` and `render_video`, in platform config (a `.yml` file) are turned on, the statuses of vehicles and orders will be outputed at `datalog/demo.yml`, which can be processed to generate animation video by:
 ```
 # load the default config file
 python3 ./python/render_video.py
