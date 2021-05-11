@@ -48,20 +48,9 @@ void AssignOrdersThroughSingleRequestBatchAssign(const std::vector<size_t> &new_
 //    fmt::print("selected_pair_indices {}\n", selected_pair_indices);
 //// debug code
 
-    // 3. Update vehicles' schedules and assigned orders' statuses
-    for (auto idx : selected_vehicle_order_pair_indices) {
-        auto &vo_pair = feasible_vehicle_order_pairs[idx];
-        if (vo_pair.trip_ids.size() == 0) { continue; }  // empty assign, no change to the vehicle's schedule
-        orders[vo_pair.trip_ids[0]].status = OrderStatus::PICKING;
-        auto &vehicle = vehicles[vo_pair.vehicle_id];
-        auto &schedule = vo_pair.feasible_schedules[vo_pair.best_schedule_idx];
-        UpdVehicleScheduleAndBuildRoute(vehicle, schedule, router_func);
-
-//        if (DEBUG_PRINT) {
-//            fmt::print("            +Assigned Order #{} to Vehicle #{}, with a schedule has {} waypoints.\n",
-//                       vo_pair.trip_ids[0], vehicle.id, vehicle.schedule.size());
-//        }
-    }
+    // 3. Update the assigned vehicles' schedules and the assigned orders' statuses.
+    UpdScheduleForVehiclesInSelectedVtPairs(feasible_vehicle_order_pairs, selected_vehicle_order_pair_indices,
+                                            orders, vehicles, router_func);
 
     if (DEBUG_PRINT) {
         int num_of_assigned_orders = 0;
@@ -83,11 +72,11 @@ std::vector<SchedulingResult> ComputeFeasibleVehicleOrderPairs(const std::vector
                                                                RouterFunc &router_func) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
-        fmt::print("                +Computing feasible vehicle order pairs...");
+        fmt::print("                *Computing feasible vehicle order pairs...");
     }
     std::vector<SchedulingResult> feasible_vehicle_order_pairs;
 
-    // Compute feasible orders for each vehicle
+    // Compute the feasible orders for each vehicle.
     for (const auto &vehicle: vehicles) {
         std::vector<std::vector<Waypoint>> basic_schedules;
         basic_schedules.push_back(vehicle.schedule);

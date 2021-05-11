@@ -92,6 +92,9 @@ std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vec
                                                                   RouterFunc &router_func,
                                                                   bool enable_reoptimization);
 
+/// \brief Update the schecule for vehicles, of which the assigned (picking) orders are reassigned to other vehicles.
+template <typename RouterFunc>
+void UpdScheduleForVehiclesHavingOrdersRemoved(std::vector<Vehicle> &vehicles, RouterFunc &router_func);
 
 // Implementation is put in a separate file for clarity and maintainability.
 #include "dispatch_osp_impl.hpp"

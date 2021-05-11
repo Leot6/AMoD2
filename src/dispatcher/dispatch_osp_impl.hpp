@@ -20,7 +20,7 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
     TIMER_START(t)
 
     // Some general settings.
-        // Always turned on. Only turned off to show that without re-optimization,
+        // Always turned on. Only turned off to show that without re-optimization (re-assigning picking orders),
         // multi-to-one match does not beat one-to-one match
     const bool enable_reoptimization = true;
         // Orders that have been assigned vehicles are guaranteed to be served to ensure a good user experience.
@@ -43,7 +43,6 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
         considered_order_ids = new_received_order_ids;
     }
 
-
     if (DEBUG_PRINT) {
         fmt::print("        -Assigning {} orders to vehicles through OSP...\n", considered_order_ids.size());
     }
@@ -60,36 +59,13 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
                           ensure_ilp_assigning_orders_that_are_picking);
 //    auto selected_vehicle_trip_pair_indices = GreedyAssignment(feasible_vehicle_trip_pairs);
 
-    // 4. Update vehicles' schedules and assigned orders' statuses
+    // 4. Update the assigned vehicles' schedules and the considered orders' statuses.
     for (auto order_id : considered_order_ids) { orders[order_id].status = OrderStatus::PENDING; }
-    for (auto idx : selected_vehicle_trip_pair_indices) {
-        auto &vt_pair = feasible_vehicle_trip_pairs[idx];
-        for (auto order_id : vt_pair.trip_ids) { orders[order_id].status = OrderStatus::PICKING; }
-        auto &vehicle = vehicles[vt_pair.vehicle_id];
-        auto &schedule = vt_pair.feasible_schedules[vt_pair.best_schedule_idx];
-        UpdVehicleScheduleAndBuildRoute(vehicle, schedule, router_func);
-    }
+    UpdScheduleForVehiclesInSelectedVtPairs(feasible_vehicle_trip_pairs, selected_vehicle_trip_pair_indices,
+                                            orders, vehicles, router_func);
 
-    // 5. Update schedule of vehicles, the assigned (picking) orders of which are reassigned to other vehicles.
-    if (enable_reoptimization) {
-        for (auto &vehicle: vehicles) {
-            if (vehicle.schedule_has_been_updated_at_current_epoch) { continue; }
-            if (vehicle.status == VehicleStatus::WORKING) {
-                if (vehicle.schedule.size() == vehicle.load) { continue; }
-                std::vector<Waypoint> basic_schedule;
-                auto pre_pos = vehicle.pos;
-                for (auto wp : vehicle.schedule) {
-                    if (std::find(vehicle.onboard_order_ids.begin(), vehicle.onboard_order_ids.end(), wp.order_id)
-                        != vehicle.onboard_order_ids.end()) {
-                        wp.route = router_func(pre_pos, wp.pos, RoutingType::TIME_ONLY);
-                        basic_schedule.push_back(wp);
-                        pre_pos = wp.pos;
-                    }
-                }
-                UpdVehicleScheduleAndBuildRoute(vehicle, basic_schedule, router_func);
-            }
-        }
-    }
+    // 5. Update the schedule of vehicles, of which the assigned (picking) orders are reassigned to other vehicles.
+    if (enable_reoptimization) { UpdScheduleForVehiclesHavingOrdersRemoved(vehicles, router_func); }
 
     if (DEBUG_PRINT) {
         int num_of_assigned_orders = 0;
@@ -113,7 +89,7 @@ std::vector<SchedulingResult> ComputeFeasibleVehicleTripPairs(const std::vector<
                                                               bool enable_reoptimization) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
-        fmt::print("                +Computing feasible vehicle trip pairs...");
+        fmt::print("                *Computing feasible vehicle trip pairs...");
     }
     std::vector<SchedulingResult> feasible_vehicle_trip_pairs;
     for (const auto &vehicle : vehicles) {
@@ -299,7 +275,7 @@ std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vec
         return basic_schedules;
     }
 
-    // If the vehicle is walking, return the sub-schedule only including the drop off tasks.
+    // If the vehicle is working, return the sub-schedule only including the drop off tasks.
     std::vector<Waypoint> basic_schedule;
     auto pre_pos = vehicle.pos;
     for (auto wp : vehicle.schedule) {
@@ -334,5 +310,39 @@ std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vec
 
     assert(basic_schedules.size() > 0);
     return basic_schedules;
+}
+
+template <typename RouterFunc>
+void UpdScheduleForVehiclesHavingOrdersRemoved(std::vector<Vehicle> &vehicles, RouterFunc &router_func) {
+    TIMER_START(t)
+    if (DEBUG_PRINT) {
+        auto num_of_changed_vehicles = 0;
+        for (auto &vehicle: vehicles) {
+            if (!vehicle.schedule_has_been_updated_at_current_epoch
+                && vehicle.status == VehicleStatus::WORKING && vehicle.schedule.size() != vehicle.load) {
+                num_of_changed_vehicles++;
+            }
+        }
+        fmt::print("                *Updating schedule for {} changed vehicles...", num_of_changed_vehicles);
+    }
+
+    for (auto &vehicle: vehicles) {
+        if (!vehicle.schedule_has_been_updated_at_current_epoch
+            && vehicle.status == VehicleStatus::WORKING && vehicle.schedule.size() != vehicle.load) {
+            std::vector<Waypoint> basic_schedule;
+            auto pre_pos = vehicle.pos;
+            for (auto wp : vehicle.schedule) {
+                if (std::find(vehicle.onboard_order_ids.begin(), vehicle.onboard_order_ids.end(), wp.order_id)
+                    != vehicle.onboard_order_ids.end()) {
+                    wp.route = router_func(pre_pos, wp.pos, RoutingType::TIME_ONLY);
+                    basic_schedule.push_back(wp);
+                    pre_pos = wp.pos;
+                }
+            }
+            UpdVehicleScheduleAndBuildRoute(vehicle, basic_schedule, router_func);
+        }
+    }
+
+    if (DEBUG_PRINT) { TIMER_END(t) }
 }
 

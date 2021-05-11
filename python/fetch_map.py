@@ -97,7 +97,7 @@ def main():
     # Check command line arguments.
     if len(sys.argv) == 1:
         config_file_local_path = "./config/platform_demo.yml"
-        map_image_file_local_path = "./media-gitignore/manhattan.jpg"
+        map_image_file_local_path = "./media-gitignore/manhattan.png"
     elif len(sys.argv) != 3:
         print("[ERROR] Wrong argument aside from the program name for correct execution! \n"
               "- Usage: python3 <prog name> (loading the default config) or python3 <prog name> <arg1> <arg2>. \n"

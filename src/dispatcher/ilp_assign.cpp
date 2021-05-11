@@ -15,7 +15,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
                                   bool ensure_assigning_orders_that_are_picking) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
-        fmt::print("                +ILP assignment with {} pairs...", vehicle_trip_pairs.size());
+        fmt::print("                *ILP assignment with {} pairs...", vehicle_trip_pairs.size());
     }
     std::vector<size_t> selected_vehicle_trip_pair_indices;
     if (vehicle_trip_pairs.size() == 0) { return selected_vehicle_trip_pair_indices; }
@@ -126,7 +126,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
 std::vector<size_t> GreedyAssignment(const std::vector<SchedulingResult> &vehicle_trip_pairs) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
-        fmt::print("                +Greedy assignment with {} pairs...", vehicle_trip_pairs.size());
+        fmt::print("                *Greedy assignment with {} pairs...", vehicle_trip_pairs.size());
     }
     std::vector<size_t> selected_vehicle_trip_pair_indices;
     if (vehicle_trip_pairs.size() == 0) { return selected_vehicle_trip_pair_indices; }
@@ -134,10 +134,10 @@ std::vector<size_t> GreedyAssignment(const std::vector<SchedulingResult> &vehicl
     std::vector<size_t> selected_order_ids;
     for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
         auto &vt_pair = vehicle_trip_pairs[i];
-        // Check if the vehicle has been selected
+        // Check if the vehicle has been selected.
         if (std::find(selected_vehicle_ids.begin(), selected_vehicle_ids.end(), vt_pair.vehicle_id)
             != selected_vehicle_ids.end()) { continue; }
-        // Check if any order in the trip has been selected
+        // Check if any order in the trip has been selected.
         bool flag_at_least_one_order_has_been_selected = false;
         for (auto order_id : vt_pair.trip_ids) {
             if (std::find(selected_order_ids.begin(), selected_order_ids.end(), order_id) != selected_order_ids.end()) {

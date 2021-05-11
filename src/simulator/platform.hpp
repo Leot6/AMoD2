@@ -35,7 +35,7 @@ class Platform {
 
   private:
     /// \brief Run simulation for one cycle. Invoked repetetively by run_simulation().
-    void RunCycle();
+    void RunCycle(std::string progress_phase = "");
 
     /// \brief Advance all vehicles for the given time and move forward the system time.
     void UpdVehiclesPositions(uint64_t time_ms);

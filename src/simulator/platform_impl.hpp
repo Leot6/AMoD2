@@ -48,7 +48,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         main_sim_end_time_ms_ +
         static_cast<uint64_t>(platform_config_.simulation_config.winddown_duration_s * 1000);
 
-    // Initialize the dispatcher and rebalancer
+    // Initialize the dispatcher and the rebalancer.
     if (platform_config_.mod_system_config.dispatch_config.dispatcher == "GI") {
         dispatcher_ = DispatcherMethod::GI;
     } else if (platform_config_.mod_system_config.dispatch_config.dispatcher == "SBA") {
@@ -91,52 +91,43 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunSimulation(std::time_t simula
     std::time_t main_sim_end_time_stamp;
 
     // Run simulation cycle by cycle.
-    if (DEBUG_PRINT) {
-        while (system_time_ms_ < system_shutdown_time_ms_) {
-            RunCycle();
-            if (system_time_ms_ == main_sim_start_time_ms_) { main_sim_start_time_stamp = getTimeStampMs(); }
-            if (system_time_ms_ == main_sim_end_time_ms_) { main_sim_end_time_stamp = getTimeStampMs(); }
+    tqdm bar1("AMoD",system_shutdown_time_ms_ / cycle_ms_);
+    std::string progress_phase = "Warm Up";
+    while (system_time_ms_ < system_shutdown_time_ms_) {
+        if (system_time_ms_ < main_sim_start_time_ms_) {
+            progress_phase = "Warm Up";
+        } else if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
+            progress_phase = "Main Study";
+        } else {
+            progress_phase = "Cool Down";
         }
-    } else {
-        tqdm bar1("AMoD",system_shutdown_time_ms_ / cycle_ms_);
-        std::string progress_phase = "Warm Up";
-        while (system_time_ms_ < system_shutdown_time_ms_) {
-            if (system_time_ms_ < main_sim_start_time_ms_) {
-                progress_phase = "Warm Up";
-            } else if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
-                progress_phase = "Main Study";
-            } else {
-                progress_phase = "Cool Down";
-            }
-            bar1.progress(progress_phase);
-            RunCycle();
-            if (system_time_ms_ == main_sim_start_time_ms_) { main_sim_start_time_stamp = getTimeStampMs(); }
-            if (system_time_ms_ == main_sim_end_time_ms_) { main_sim_end_time_stamp = getTimeStampMs(); }
-        }
-        bar1.finish();
+        if (!DEBUG_PRINT) { bar1.progress(progress_phase); }
+        if (system_time_ms_ == main_sim_start_time_ms_) { main_sim_start_time_stamp = getTimeStampMs(); }
+        RunCycle(progress_phase);
+        if (system_time_ms_ == main_sim_end_time_ms_) { main_sim_end_time_stamp = getTimeStampMs(); }
     }
+    if (!DEBUG_PRINT) { bar1.finish(); }
 
     // Create report.
     auto main_sim_runtime_s = (main_sim_end_time_stamp - main_sim_start_time_stamp) / 1000.0;
     fmt::print("[INFO] Simulation completed. Creating report.\n");
     CreateReport(simulation_start_time_stamp, total_init_time_s, main_sim_runtime_s);
-
-    return;
 };
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
+void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_phase) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
-        fmt::print("[DEBUG] T = {}s: Epoch {}/{} is running.\n",
+        fmt::print("[DEBUG] T = {}s: Epoch {}/{} is running. [{}]\n",
                    (system_time_ms_) / 1000.0,
                    (system_time_ms_ + cycle_ms_) / cycle_ms_,
-                   system_shutdown_time_ms_ / cycle_ms_);
+                   system_shutdown_time_ms_ / cycle_ms_,
+                   progress_phase);
     }
 
-    // 1. Update the vehicles' positions and the orders' statuses. system_time_ms_ is updated at this step.
+    // 1. Update the vehicles' positions and the orders' statuses. (system_time_ms_ is updated at this step.)
     if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
-        // Advance the vehicles frame by frame (if render_video=false, then frame_ms_=cycle_ms_).
+        // Advance the vehicles frame by frame. (if render_video=false, then frame_ms_=cycle_ms_.)
         for (auto ms = 0; ms < cycle_ms_; ms += frame_ms_) {
             UpdVehiclesPositions(frame_ms_);
             if (ms < cycle_ms_ - frame_ms_ &&
@@ -176,8 +167,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
                 new_received_order_ids, orders_, vehicles_, system_time_ms_, router_func_);
     }
 
-
-
     // 4. Reposition idle vehicles to high demand areas.
     if (rebalancer_ == RebalancerMethod::NR) {
         RepositionIdleVehicleThroughNaiveRebalancer(orders_, vehicles_, router_func_);
@@ -190,7 +179,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
     }
 
     if (DEBUG_PRINT) {
-        // 6. Check the statuses of orders and no one is assigned to multiple vehicles.
+        // 6. Check the statuses of orders, to make sure that no one is assigned to multiple vehicles.
         auto num_of_total_orders = orders_.size();
         auto num_of_complete_orders = 0, num_of_onboard_orders = 0, num_of_picking_orders = 0,
                 num_of_pending_orders = 0, num_of_walkaway_orders = 0;
@@ -209,8 +198,8 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
         }
         assert(num_of_total_orders == num_of_complete_orders + num_of_onboard_orders + num_of_picking_orders
                                       + num_of_pending_orders + num_of_walkaway_orders);
-        auto num_of_onboard_orders_from_vehicle_schedule = 0, num_of_picking_orders_from_vehicle_schedule = 0;
-        auto num_of_dropping_orders_from_vehicle_schedule = 0;
+        auto num_of_onboard_orders_from_vehicle_schedule = 0, num_of_picking_orders_from_vehicle_schedule = 0,
+                num_of_dropping_orders_from_vehicle_schedule = 0;
         for (const auto &vehicle : vehicles_) {
             num_of_onboard_orders_from_vehicle_schedule += vehicle.onboard_order_ids.size();
             for (const auto &wp : vehicle.schedule) {
@@ -220,9 +209,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
         }
         assert(num_of_onboard_orders_from_vehicle_schedule + num_of_picking_orders_from_vehicle_schedule
                == num_of_dropping_orders_from_vehicle_schedule);
-//        fmt::print("num_of_picking_orders {} - {}\n",
-//                   num_of_picking_orders,
-//                   num_of_picking_orders_from_vehicle_schedule);
         assert(num_of_picking_orders == num_of_picking_orders_from_vehicle_schedule);
         assert(num_of_onboard_orders == num_of_onboard_orders_from_vehicle_schedule);
 
@@ -236,8 +222,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle() {
         TIMER_END(t)
         fmt::print("\n");
     }
-
-    return;
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
@@ -280,8 +264,6 @@ void Platform<RouterFunc, DemandGeneratorFunc>::UpdVehiclesPositions(uint64_t ti
                    num_of_idle_vehicles, vehicles_.size(), num_of_rebalancing_vehicles, vehicles_.size());
         TIMER_END(t)
     }
-
-    return;
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
@@ -344,11 +326,15 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::GenerateOrders() 
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::WriteToDatalog() {
-    YAML::Node node;
+    TIMER_START(t)
+    if (DEBUG_PRINT) {
+        fmt::print("        -Writing to datalog ()...");
+    }
 
+    YAML::Node node;
     node["system_time_ms"] = system_time_ms_;
 
-    // For each of the vehicles, we write the relavant data in yaml format.
+    // For each of the vehicles, we write the relevant data in yaml format.
     for (const auto &vehicle : vehicles_) {
         YAML::Node veh_node;
 
@@ -375,7 +361,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::WriteToDatalog() {
         node["vehicles"].push_back(std::move(veh_node));
     }
 
-    // For each of the orders, we write the relavant data in yaml format.
+    // For each of the orders, we write the relevant data in yaml format.
     for (const auto &order : orders_) {
         YAML::Node origin_pos_node;
         origin_pos_node["lon"] = fmt::format("{:.6f}", order.origin.lon);
@@ -400,16 +386,14 @@ void Platform<RouterFunc, DemandGeneratorFunc>::WriteToDatalog() {
 
     datalog_ofstream_ << node << std::endl << "---\n";
 
-//    fmt::print("[DEBUG] T = {}s: Wrote to datalog.\n", system_time_ms_ / 1000.0);
-
-    return;
+    if (DEBUG_PRINT) { TIMER_END(t) }
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
 void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulation_start_time_stamp,
                                                              float total_init_time_s,
                                                              float main_sim_runtime_s) {
-    // Get the width of the current console window
+    // Get the width of the current console window.
     struct winsize size;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
     int window_width = size.ws_col;
@@ -594,5 +578,4 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
                total_loaded_time_traveled_ms * 1.0 / total_time_traveled_ms);
 
     fmt::print("{}\n", dividing_line);
-    return;
 }

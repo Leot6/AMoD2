@@ -92,8 +92,6 @@ std::vector<Waypoint> GenerateScheduleFromSubSchedule(const Order &order,
     assert(false && "Logical error! We should never reach this line of code!");
 }
 
-
-
 template <typename RouterFunc>
 std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
                                       size_t pickup_idx,
@@ -147,6 +145,17 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
 }
 
 template <typename RouterFunc>
+bool PassQuickCheck(const Order &order, const Vehicle &vehicle, uint64_t system_time_ms, RouterFunc &router_func) {
+    // The vehicle can not serve the order even when it is idle.
+    if (router_func(vehicle.pos, order.origin, RoutingType::TIME_ONLY).duration_ms +
+        vehicle.step_to_pos.duration_ms + system_time_ms > order.max_pickup_time_ms) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+template <typename RouterFunc>
 void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func) {
     // If a rebalancing vehicle is assigned a trip while ensuring it visits the reposition waypoint,
     // its rebalancing task can be cancelled.
@@ -163,7 +172,7 @@ void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &sc
         assert(schedule.size() % 2 == 0);
     }
 
-    // Update vehicle's schedule with detailed route
+    // Update vehicle's schedule with detailed route.
     vehicle.schedule = schedule;
     auto pre_pos = vehicle.pos;
     for (auto i = 0; i < vehicle.schedule.size(); i++) {
@@ -173,7 +182,7 @@ void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &sc
         pre_pos = wp.pos;
     }
 
-    // Update vehicle's status
+    // Update vehicle's status.
     vehicle.schedule_has_been_updated_at_current_epoch = true;
     if (vehicle.schedule.size() > 0) {
         if (vehicle.schedule[0].op == WaypointOp::PICKUP || vehicle.schedule[0].op == WaypointOp::DROPOFF) {
@@ -189,7 +198,7 @@ void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &sc
         return;
     }
 
-    // Add vehicle's pre-route, when vehicle is currently on the road link instead of a waypoint node
+    // Add vehicle's pre-route, when vehicle is currently on the road link instead of a waypoint node.
     if (vehicle.step_to_pos.duration_ms > 0) {
         auto &route = vehicle.schedule[0].route;
         route.duration_ms += vehicle.step_to_pos.duration_ms;
@@ -200,12 +209,30 @@ void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &sc
 }
 
 template <typename RouterFunc>
-bool PassQuickCheck(const Order &order, const Vehicle &vehicle, uint64_t system_time_ms, RouterFunc &router_func) {
-    // The vehicle can not serve the order even when it is idle.
-    if (router_func(vehicle.pos, order.origin, RoutingType::TIME_ONLY).duration_ms +
-        vehicle.step_to_pos.duration_ms + system_time_ms > order.max_pickup_time_ms) {
-        return false;
-    } else {
-        return true;
+void UpdScheduleForVehiclesInSelectedVtPairs(std::vector<SchedulingResult> &vehicle_trip_pairs,
+                                             const std::vector<size_t> &selected_vehicle_trip_pair_indices,
+                                             std::vector<Order> &orders,
+                                             std::vector<Vehicle> &vehicles,
+                                             RouterFunc &router_func) {
+    TIMER_START(t)
+    if (DEBUG_PRINT) {
+        fmt::print("                *Executing assignment with {} pairs...",
+                   selected_vehicle_trip_pair_indices.size());
     }
+
+    for (auto idx : selected_vehicle_trip_pair_indices) {
+        auto &vt_pair = vehicle_trip_pairs[idx];
+        if (vt_pair.trip_ids.size() == 0) { continue; }  // empty assign, no change to the vehicle's schedule
+        for (auto order_id : vt_pair.trip_ids) { orders[order_id].status = OrderStatus::PICKING; }
+        auto &vehicle = vehicles[vt_pair.vehicle_id];
+        auto &schedule = vt_pair.feasible_schedules[vt_pair.best_schedule_idx];
+        UpdVehicleScheduleAndBuildRoute(vehicle, schedule, router_func);
+
+//        if (DEBUG_PRINT) {
+//            fmt::print("            +Assigned Trip #{} to Vehicle #{}, with a schedule has {} waypoints.\n",
+//                       vt_pair.trip_ids, vehicle.id, vehicle.schedule.size());
+//        }
+    }
+
+    if (DEBUG_PRINT) { TIMER_END(t) }
 }
