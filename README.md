@@ -46,14 +46,14 @@ The following simulation result is from a senariao with 400k requests during the
 
 ### Build `AMoD2`
 
-To run a simulation, download data files from [this onedrive link](https://1drv.ms/u/s!AsqflzzqZj9qg-8-rT_CpBIZhc2pzw?e=TtYGfD) or [this google drive link](https://drive.google.com/drive/folders/1Q0ZK3c8B8tjd7vO5UsgKXCJPDVr8mGVt?usp=sharing), and put the downloaded folders in the root directory.
+Download code and data files from the [releases](https://github.com/Leot6/AMoD2/releases). Data files should be located in the root directory of the code.
 ```
 |-- AMoD2
    |-- datalog-gitignore
    |-- media-gitignore
 ```
 
-To configure the build system, run once:
+To configure the build system, go to the root directory `AMoD2` and run once:
 ```
 cmake -S . -B build
 ```
