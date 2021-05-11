@@ -72,9 +72,8 @@ class tqdm {
 
         void finish(std::string finish_label = "") {
             current_iteration = total_iterations;
-            if (finish_label == "") { finish_label = default_label; }
             progress(finish_label);
-            printf("\n");
+            printf(" \n");
             fflush(stdout);
         }
         void progress(std::string progress_label = "") {
