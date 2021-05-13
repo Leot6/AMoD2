@@ -31,7 +31,7 @@ std::time_t getTimeStampMs();
 #define TIMER_START(start_time) auto start_time = getTimeStampMs();
 #define TIMER_END(start_time) std::cout << "  (" << (getTimeStampMs() - start_time) / 1000.0 * pow(10, 0) << "s)\n";
 
-/// \brief A function to check whether the data file is existing.
+/// \brief A function to check whether the data file exists.
 void CheckFileExistence(const std::string &path_to_file);
 
 /// \brief A function to print the schedule in console.

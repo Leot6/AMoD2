@@ -57,19 +57,12 @@ std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms)
     return requests;
 }
 
-const std::vector<Request> &DemandGenerator::getAllRequests() const {
-    return all_requests_;
-}
-
-
 std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
-    auto s_time = getTimeStampMs();
     std::vector<Request> all_requests = {};
-    using namespace csv;
-    CSVReader reader(path_to_csv);
+    csv::CSVReader reader(path_to_csv);
 
-    for (CSVRow& row: reader) { // Input iterator
+    for (csv::CSVRow& row: reader) {     // input iterator
         Request request;
         request.origin_node_id = row["onid"].get<size_t>();
         request.destination_node_id = row["dnid"].get<size_t>();
@@ -77,7 +70,6 @@ std::vector<Request> LoadRequestsFromCsvFile(std::string path_to_csv) {
         request.request_time_ms = ComputeTheAccumulatedSecondsFrom0Clock(request.request_time_date) * 1000;
         all_requests.push_back(request);
     }
-//    fmt::print("[DEBUG] ({}s) Load request data from {}, with {} requests.\n",
-//               float (getTimeStampMs() - s_time)/1000, path_to_csv, all_requests.size());
+//    fmt::print("[DEBUG] Load request data from {}, with {} requests.\n", path_to_csv, all_requests.size());
     return std::move(all_requests);
 }

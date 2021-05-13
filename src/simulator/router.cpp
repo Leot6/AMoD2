@@ -100,11 +100,11 @@ std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
     auto s_time_ms = getTimeStampMs();
     std::vector<Pos> all_nodes;
-    std::ifstream data_csv(path_to_csv); //load the data file
+    std::ifstream data_csv(path_to_csv);       //load the data file
     std::string line;
-    getline(data_csv, line);  // ignore the first line
-    while (getline(data_csv, line)) {  // read every line
-        std::istringstream readstr(line); // string every line
+    getline(data_csv, line);            // ignore the first line
+    while (getline(data_csv, line)) {   // read every line
+        std::istringstream readstr(line);     // string every line
         std::vector<std::string> data_line;
         std::string info;
         while (getline(readstr, info, ',')) {
@@ -123,13 +123,12 @@ std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv) {
 std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
     std::vector<std::vector<int>> shortest_path_table;
-    using namespace csv;
     csv::CSVReader csv_reader(path_to_csv);
-    for (CSVRow &row: csv_reader) { // Input iterator
+    for (csv::CSVRow &row: csv_reader) {         // input iterator
         std::vector<int> int_row;
         int_row.reserve(row.size());
         long i = 0;
-        for (CSVField &field: row) {
+        for (csv::CSVField &field: row) {
             if (i == 0) {
                 i++;
                 continue;
@@ -145,13 +144,12 @@ std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_
 std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
     std::vector<std::vector<float>> mean_travel_time_table;
-    using namespace csv;
     csv::CSVReader csv_reader(path_to_csv);
-    for (CSVRow &row: csv_reader) { // Input iterator
+    for (csv::CSVRow &row: csv_reader) {         // input iterator
         std::vector<float> float_row;
         float_row.reserve(row.size());
         long i = 0;
-        for (CSVField &field: row) {
+        for (csv::CSVField &field: row) {
             if (i == 0) {
                 i++;
                 continue;

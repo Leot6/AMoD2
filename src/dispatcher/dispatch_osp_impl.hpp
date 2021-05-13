@@ -21,17 +21,18 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
 
     // Some general settings.
         // Always turned on. Only turned off to show that without re-optimization (re-assigning picking orders),
-        // multi-to-one match does not beat one-to-one match
+        // multi-to-one match does not beat one-to-one match.
     const bool enable_reoptimization = true;
-        // Orders that have been assigned vehicles are guaranteed to be served to ensure a good user experience.
-        // But the objective could be further improved if this guarantee is abandoned.
-    const bool ensure_ilp_assigning_orders_that_are_picking = true;
+        // A cutoff is set to avoid some potential bugs making the algorithm spends too much time on some dead loop.
         // 30 s is considered as a sufficient large value. If this cutoff time is set too small, it may happens that
         // there are not enough feasible vehicle_trip_pairs found to support ensure_assigning_orders_that_are_picking.
     const int cutoff_time_for_a_size_k_trip_search_per_vehicle_ms = 1000;  // normally set <= 30,000 ms
+        // Orders that have been assigned vehicles are guaranteed to be served to ensure a good user experience.
+        // The objective of assignment could be further improved if this guarantee is abandoned.
+    const bool ensure_ilp_assigning_orders_that_are_picking = true;
 
-    // 1. Get the list of considered orders, normally including all picking and pending orders. If re-assigning
-    // picking orders to different vehicles is not enabled, only new_received_orders are considered.
+    // 1. Get the list of considered orders, normally including all picking and pending orders.
+    // If re-assigning picking orders to different vehicles is not enabled, only new_received_orders are considered.
     std::vector<size_t> considered_order_ids;
     if (enable_reoptimization) {
         for (auto &order: orders) {
@@ -237,9 +238,9 @@ std::vector<SchedulingResult> ComputeSizeKTripsForOneVehicle(
             std::set_difference(trip2_k_ids.begin(), trip2_k_ids.end(), trip1_ids.begin(), trip1_ids.end(),
                                 std::back_inserter(insertion_order_ids));
             assert(insertion_order_ids.size() == 1);
-            const auto &order = orders[insertion_order_ids[0]];
+            const auto &insert_order = orders[insertion_order_ids[0]];
             auto scheduling_result_this_pair = ComputeScheduleOfInsertingOrderToVehicle(
-                    order, orders, vehicle, sub_schedules, system_time_ms, router_func);
+                    insert_order, orders, vehicle, sub_schedules, system_time_ms, router_func);
             if (scheduling_result_this_pair.success) {
                 scheduling_result_this_pair.trip_ids = trip2_k_ids;
                 feasible_trips_of_size_k.push_back(std::move(scheduling_result_this_pair));
@@ -275,7 +276,7 @@ std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vec
         return basic_schedules;
     }
 
-    // If the vehicle is working, return the sub-schedule only including the drop off tasks.
+    // If the vehicle is working, return the sub-schedule only including the drop-off tasks.
     std::vector<Waypoint> basic_schedule;
     auto pre_pos = vehicle.pos;
     for (auto wp : vehicle.schedule) {

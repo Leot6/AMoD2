@@ -26,7 +26,7 @@ SchedulingResult ComputeScheduleOfInsertingOrderToVehicle(const Order &order,
         const auto num_wps = sub_schedule.size();
         // insert the order's pickup point
         for (int pickup_idx = 0; pickup_idx <= num_wps; pickup_idx++) {
-            // insert the order's dropoff point
+            // insert the order's drop-off point
             for (int dropoff_idx = pickup_idx; dropoff_idx <= num_wps; dropoff_idx++) {
                 auto new_schedule = GenerateScheduleFromSubSchedule(
                         order, vehicle, sub_schedule, pickup_idx, dropoff_idx, router_func);
@@ -105,26 +105,30 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
     auto accumulated_time_ms = system_time_ms + vehicle.step_to_pos.duration_ms;
     auto idx = 0;
     for (const auto &wp : schedule) {
-        // The planned pickup/dropoff time should be no larger than the max allowed pickup/dropoff time.
+        // The planned pickup/drop-off time should be no larger than the max allowed pickup/drop-off time.
         accumulated_time_ms += wp.route.duration_ms;
-        if (idx >= pickup_idx) {  // the points ahead of the pickup of the inserted order do not need check
+        if (idx >= pickup_idx) {  // the points ahead of the pickup of the inserted order do not need check.
             if (wp.op == WaypointOp::PICKUP && accumulated_time_ms > orders[wp.order_id].max_pickup_time_ms) {
-                // (wp.order_id == order.id) means the max pickup constraint of the inserted order is violated,
+                // (wp.order_id == order.id) means that the max pickup constraint of the inserted order is violated,
                 // since later pickup brings longer wait, we can break the insertion of this order.
                 if (wp.order_id == order.id) { return {false, 2}; }
-                // (idx <= dropoff_idx) means the the violation is caused by the pick-up of the inserted order,
-                // since the violation happens before the dropoff of the order, we can try a new pickup insertion
+                // (idx <= dropoff_idx) means that the the violation is caused by the pick-up of the inserted order,
+                // since the violation happens before the drop-off of the order, we can try a new pickup insertion.
                 if (idx <= dropoff_idx) { return {false, 1}; }
                 return {false, 0};
             } else if (wp.op == WaypointOp::DROPOFF && accumulated_time_ms > orders[wp.order_id].max_dropoff_time_ms) {
-                // (wp.order_id == order.id) means the max dropoff constraint of the inserted order is violated,
-                // since later dropoff brings longer delay, we do not need to check later dropoff idx.
+                // (wp.order_id == order.id) means that the max drop-off constraint of the inserted order is violated,
+                // since later drop-off brings longer delay, we do not need to check later drop-off idx.
                 if (idx <= dropoff_idx || wp.order_id == order.id) { return {false, 1}; }
                 return {false, 0};
             } else if (wp.op == WaypointOp::REPOSITION) {
-                auto time_to_reposition_point_ms = router_func(vehicle.pos, wp.pos, RoutingType::TIME_ONLY).duration_ms
-                                                   + vehicle.step_to_pos.duration_ms;
-                if (accumulated_time_ms > time_to_reposition_point_ms * 1.1) { return {false, 0}; }
+                auto direct_time_to_reposition_point_ms =
+                        router_func(vehicle.pos, wp.pos, RoutingType::TIME_ONLY).duration_ms
+                        + vehicle.step_to_pos.duration_ms;
+                // The following line is to make sure that a rebalancing vehicle can only be assigned orders when
+                // ensuring its visit to the reposition waypoint with a small detour.
+                // So that it is a valid rebalancing to the reposition waypoint.
+                if (accumulated_time_ms > direct_time_to_reposition_point_ms * 1.2) { return {false, 0}; }
             }
         }
 
@@ -157,7 +161,7 @@ bool PassQuickCheck(const Order &order, const Vehicle &vehicle, uint64_t system_
 
 template <typename RouterFunc>
 void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func) {
-    // If a rebalancing vehicle is assigned a trip while ensuring it visits the reposition waypoint,
+    // If a rebalancing vehicle is assigned a trip while ensuring its visit to the reposition waypoint,
     // its rebalancing task can be cancelled.
     if (vehicle.status == VehicleStatus::REBALANCING && schedule.size() > 1) {
         assert(vehicle.schedule.size() == 1);

@@ -45,24 +45,21 @@ void RepositionIdleVehicleThroughNaiveRebalancer(const std::vector<Order> &order
     }
 
     // 3. Select suitable rebalancing candidates. Greedily from the one with the shortest travel time.
-    int num_of_new_rebalancing_vehicles = 0;
     std::sort(rebalancing_candidates.begin(), rebalancing_candidates.end(),
               [](std::pair<size_t, std::vector<Waypoint>> a, std::pair<size_t, std::vector<Waypoint>> b) {
         return a.second[0].route.duration_ms < b.second[0].route.duration_ms;
     });
-
     std::vector<size_t> selected_vehicle_ids;
     std::vector<size_t> selected_order_ids;
     for (auto &rebalancing_task : rebalancing_candidates) {
-        // Check if the vehicle has been selected to do a rebalancing task
+        // Check if the vehicle has been selected to do a rebalancing task.
         if (std::find(selected_vehicle_ids.begin(), selected_vehicle_ids.end(), rebalancing_task.first)
             != selected_vehicle_ids.end()) { continue; }
-        // Check if the visiting point in the current rebalancing task has been visited
+        // Check if the visiting point in the current rebalancing task has been visited.
         if (std::find(selected_order_ids.begin(), selected_order_ids.end(), rebalancing_task.second[0].order_id)
             != selected_order_ids.end()) { continue; }
         selected_vehicle_ids.push_back(rebalancing_task.first);
         selected_order_ids.push_back(rebalancing_task.second[0].order_id);
-        num_of_new_rebalancing_vehicles++;
         // 4. Push the rebalancing task to the assigned vehicle.
         auto &rebalancing_vehicle = vehicles[rebalancing_task.first];
         auto &rebalancing_schedule = rebalancing_task.second;
@@ -76,7 +73,7 @@ void RepositionIdleVehicleThroughNaiveRebalancer(const std::vector<Order> &order
     }
 
     if (DEBUG_PRINT) {
-        fmt::print("            +Rebalancing vehicles: {}", num_of_new_rebalancing_vehicles);
+        fmt::print("            +Rebalancing vehicles: {}", selected_vehicle_ids.size());
         TIMER_END(t)
     }
 }

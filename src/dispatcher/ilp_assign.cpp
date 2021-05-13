@@ -78,8 +78,8 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             model.addConstr(con_this_vehicle <= 1);
         }
         for (auto j = 0; j < considered_order_ids.size(); j++) { // Σ var_vt_pair[i] * Θ_vt(order) + var_order[j] = 1.
-            GRBLinExpr con_this_order = 0.0;
             const auto &order = orders[considered_order_ids[j]];
+            GRBLinExpr con_this_order = 0.0;
             for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
                 const auto &trip_ids_this_vt = vehicle_trip_pairs[i].trip_ids;
                 if (std::find(trip_ids_this_vt.begin(), trip_ids_this_vt.end(), order.id) != trip_ids_this_vt.end()) {
@@ -157,18 +157,6 @@ std::vector<size_t> GreedyAssignment(const std::vector<SchedulingResult> &vehicl
     return selected_vehicle_trip_pair_indices;
 }
 
-bool SortForIlp(const SchedulingResult &a, const SchedulingResult &b) {
-    if (a.vehicle_id != b.vehicle_id) {
-        return (a.vehicle_id < b.vehicle_id);
-    } else {
-        if (a.trip_ids.size() != b.trip_ids.size()){
-            return (a.trip_ids.size() > b.trip_ids.size());
-        } else {
-            return (a.best_schedule_cost_ms < b.best_schedule_cost_ms);
-        }
-    }
-}
-
 bool SortVehicleTripPairs(const SchedulingResult &a, const SchedulingResult &b) {
     if (a.trip_ids.size() != b.trip_ids.size()){
         return (a.trip_ids.size() > b.trip_ids.size());
@@ -176,3 +164,15 @@ bool SortVehicleTripPairs(const SchedulingResult &a, const SchedulingResult &b) 
         return (a.best_schedule_cost_ms < b.best_schedule_cost_ms);
     }
 }
+
+//bool SortForIlp(const SchedulingResult &a, const SchedulingResult &b) {
+//    if (a.vehicle_id != b.vehicle_id) {
+//        return (a.vehicle_id < b.vehicle_id);
+//    } else {
+//        if (a.trip_ids.size() != b.trip_ids.size()){
+//            return (a.trip_ids.size() > b.trip_ids.size());
+//        } else {
+//            return (a.best_schedule_cost_ms < b.best_schedule_cost_ms);
+//        }
+//    }
+//}

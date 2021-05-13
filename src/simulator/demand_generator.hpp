@@ -16,11 +16,8 @@ class DemandGenerator {
     explicit DemandGenerator(std::string _path_to_taxi_data, std::string _simulation_start_time,
                              float _request_density);
 
-    /// \brief Main functor that generates the requests til the target system time.
+    /// \brief Main functor that generates the requests till the target system time.
     std::vector<Request> operator()(uint64_t target_system_time_ms);
-
-    const std::vector<Request> & getAllRequests() const;
-
 
 private:
     /// \brief The system time starting from 0.
