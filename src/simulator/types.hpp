@@ -168,8 +168,8 @@ struct Vehicle {
     int32_t loaded_time_traveled_ms = 0; // accumulated time traveled, weighted by the load (include empty and rebalancing)
     int32_t empty_time_traveled_ms = 0; // accumulated time traveled, when no passenger onboard (not include rebalancing)
     int32_t rebl_time_traveled_ms = 0; // accumulated time traveled, when executing rebalancing tasks
-    // e.g. a vehicle travels 100 s, of which 10 s rebalancing until get an assignment
-    // + 10 s picking (no passenger onboard), 80 s travelling with passenger onboard.
+    // e.g. a vehicle travels 100 (10+10+80) s, consisting of 10 s rebalancing until get an assignment,
+    // 10 s picking (no passenger onboard) and 80 s travelling with passenger onboard.
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

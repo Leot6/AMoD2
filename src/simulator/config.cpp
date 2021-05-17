@@ -9,10 +9,7 @@ bool DEBUG_PRINT = false;
 PlatformConfig load_platform_config(const std::string &path_to_platform_config, const std::string &root_directory) {
     auto platform_config_yaml = YAML::LoadFile(path_to_platform_config);
 
-
-    auto debug_print_string = platform_config_yaml["simulation_config"]["debug_print"].as<std::string>();
-    if (debug_print_string == "true") { DEBUG_PRINT = true; }
-    else if (debug_print_string == "false") { DEBUG_PRINT = false; }
+    DEBUG_PRINT = platform_config_yaml["simulation_config"]["debug_print"].as<bool>();
 
     PlatformConfig platform_config;
 
@@ -53,21 +50,21 @@ PlatformConfig load_platform_config(const std::string &path_to_platform_config, 
                     .as<float>();
     platform_config.mod_system_config.request_config.max_pickup_wait_time_s = 60 *
             platform_config_yaml["mod_system_config"]["request_config"]["max_pickup_wait_time_min"]
-                    .as<double>();
+                    .as<size_t>();
     platform_config.mod_system_config.request_config.max_onboard_detour =
             platform_config_yaml["mod_system_config"]["request_config"]["max_onboard_detour"]
-                    .as<double>();
+                    .as<float>();
 
     platform_config.simulation_config.simulation_start_time =
             platform_config_yaml["simulation_config"]["simulation_start_time"].as<std::string>();
     platform_config.simulation_config.cycle_s =
-            platform_config_yaml["simulation_config"]["cycle_s"].as<double>();
-    platform_config.simulation_config.warmup_duration_s = 60 *
-            platform_config_yaml["simulation_config"]["warmup_duration_min"].as<double>();
-    platform_config.simulation_config.simulation_duration_s = 60 *
-            platform_config_yaml["simulation_config"]["simulation_duration_min"].as<double>();
-    platform_config.simulation_config.winddown_duration_s = 60 *
-            platform_config_yaml["simulation_config"]["winddown_duration_min"].as<double>();
+            platform_config_yaml["simulation_config"]["cycle_s"].as<size_t>();
+    platform_config.simulation_config.warmup_duration_min =
+            platform_config_yaml["simulation_config"]["warmup_duration_min"].as<size_t>();
+    platform_config.simulation_config.simulation_duration_min =
+            platform_config_yaml["simulation_config"]["simulation_duration_min"].as<size_t>();
+    platform_config.simulation_config.winddown_duration_min =
+            platform_config_yaml["simulation_config"]["winddown_duration_min"].as<size_t>();
 
     platform_config.output_config.datalog_config.output_datalog =
             platform_config_yaml["output_config"]["datalog_config"]["output_datalog"].as<bool>();
@@ -82,7 +79,7 @@ PlatformConfig load_platform_config(const std::string &path_to_platform_config, 
     platform_config.output_config.video_config.frames_per_cycle =
             platform_config_yaml["output_config"]["video_config"]["frames_per_cycle"].as<size_t>();
     platform_config.output_config.video_config.replay_speed =
-            platform_config_yaml["output_config"]["video_config"]["replay_speed"].as<double>();
+            platform_config_yaml["output_config"]["video_config"]["replay_speed"].as<size_t>();
 
     fmt::print("[INFO] Loaded the platform configuration yaml file from {}.\n",
                path_to_platform_config);

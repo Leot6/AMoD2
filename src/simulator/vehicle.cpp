@@ -107,7 +107,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
     }
     vehicle.schedule_has_been_updated_at_current_epoch = false;
 
-    // Move the vehicle's pos by step_to_pos, if it is not empty but the vehicle's schedule is empty.
+    // Move the vehicle's pos by step_to_pos, if it is not empty while the vehicle's schedule is empty.
     // (This case is raised when the vehicle's assigned orders are reassigned to other vehicles and it becomes idle.)
     if (vehicle.status == VehicleStatus::IDLE) {
         if (vehicle.step_to_pos.duration_ms <= time_ms) {

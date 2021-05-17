@@ -17,13 +17,13 @@ area_config:
   lat_max: 40.8825
 mod_system_config:
   dispatch_config:
-    dispatcher: "SBA"   # 3 options: GI, SBA, OSP
-    rebalancer: "NR"   # 2 options: NR (naive rebalancer), NONE
+    dispatcher: "SBA"        # 3 options: GI, SBA, OSP
+    rebalancer: "NR"         # 2 options: NR (naive rebalancer), NONE
   fleet_config:
-    fleet_size: 2000
+    fleet_size: 200
     veh_capacity: 6
   request_config:
-    request_density: 1    # <= 1
+    request_density: 0.1    # <= 1
     max_pickup_wait_time_min: 5
     max_onboard_detour: 1.3   # < 2
 simulation_config:
@@ -40,6 +40,5 @@ output_config:
   video_config:
     render_video: false   # this requires output_datalog = true
     path_to_output_video: "/media-gitignore/demo.mp4"
-    frames_per_cycle: 3  # frame_length = cycle_s / frames_per_cycle (higher frames yields slower speed and longer video)
-                         # total frames = simulation_duration_min * 60 / frame_length
-    replay_speed: 200    # fps = replay_speed / frame_length (higher speed yields faster speed and shorter video)
+    frames_per_cycle: 3  # frame_length_s = cycle_s / frames_per_cycle
+    replay_speed: 200    # the speed of the video replay as compared to the actual system time, = fps * frame_length_s

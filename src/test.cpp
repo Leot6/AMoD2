@@ -27,7 +27,7 @@ int test(std::vector<int> & list, int delete_item) {
 }
 
 int main(int argc, const char *argv[]) {
-    // get the root directory
+    // Get the root directory.
     const int MAXPATH=250;
     char buffer[MAXPATH];
     getcwd(buffer, MAXPATH);

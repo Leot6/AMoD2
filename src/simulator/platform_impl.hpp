@@ -40,13 +40,13 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         frame_ms_ = cycle_ms_;
     }
     main_sim_start_time_ms_ =
-        static_cast<uint64_t>(platform_config_.simulation_config.warmup_duration_s * 1000);
+        static_cast<uint64_t>(platform_config_.simulation_config.warmup_duration_min * 60 * 1000);
     main_sim_end_time_ms_ =
         main_sim_start_time_ms_ +
-        static_cast<uint64_t>(platform_config_.simulation_config.simulation_duration_s * 1000);
+        static_cast<uint64_t>(platform_config_.simulation_config.simulation_duration_min * 60 * 1000);
     system_shutdown_time_ms_ =
         main_sim_end_time_ms_ +
-        static_cast<uint64_t>(platform_config_.simulation_config.winddown_duration_s * 1000);
+        static_cast<uint64_t>(platform_config_.simulation_config.winddown_duration_min * 60 * 1000);
 
     // Initialize the dispatcher and the rebalancer.
     if (platform_config_.mod_system_config.dispatch_config.dispatcher == "GI") {
@@ -440,9 +440,9 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
     auto main_sim_end_date = ConvertTimeSecondToDate(
             ConvertTimeDateToSeconds(sim_start_time_date) + main_sim_end_time_ms_ / 1000);
     auto num_of_epochs = system_shutdown_time_ms_ / cycle_ms_;
-    auto num_of_main_epochs = platform_config_.simulation_config.simulation_duration_s / (cycle_ms_ / 1000);
+    auto num_of_main_epochs = platform_config_.simulation_config.simulation_duration_min * 60 / (cycle_ms_ / 1000);
     auto frame_length_s = cycle_ms_ / 1000 / platform_config_.output_config.video_config.frames_per_cycle;
-    auto video_frames =  platform_config_.simulation_config.simulation_duration_s / frame_length_s;
+    auto video_frames =  platform_config_.simulation_config.simulation_duration_min * 60 / frame_length_s;
     auto video_fps = platform_config_.output_config.video_config.replay_speed / frame_length_s;
     auto video_duration = video_frames / video_fps;
 
@@ -462,9 +462,9 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
     fmt::print("  - Fleet Config: size = {}, capacity = {}. ({} + {} + {} = {} epochs).\n",
                platform_config_.mod_system_config.fleet_config.fleet_size,
                platform_config_.mod_system_config.fleet_config.veh_capacity,
-               platform_config_.simulation_config.warmup_duration_s / (cycle_ms_ / 1000),
+               platform_config_.simulation_config.warmup_duration_min * 60 / (cycle_ms_ / 1000),
                num_of_main_epochs,
-               platform_config_.simulation_config.winddown_duration_s / (cycle_ms_ / 1000), num_of_epochs);
+               platform_config_.simulation_config.winddown_duration_min * 60 / (cycle_ms_ / 1000), num_of_epochs);
     fmt::print("  - Order Config: density = {} ({}), max_wait = {} s. (Δt = {} s).\n",
                platform_config_.mod_system_config.request_config.request_density,
                request_number,
@@ -562,18 +562,18 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
     auto avg_empty_time_traveled_s = total_empty_time_traveled_ms / 1000.0 / vehicles_.size();
     auto avg_rebl_time_traveled_s = total_rebl_time_traveled_ms / 1000.0 / vehicles_.size();
     fmt::print("# Vehicles ({})\n", vehicles_.size());
-    fmt::print("  - Service Distance: total_dist = {:.2f} km, avg_dist = {:.2f} km.\n",
+    fmt::print("  - Travel Distance: total_dist = {:.2f} km, avg_dist = {:.2f} km.\n",
                total_dist_traveled_mm / 1000000.0, avg_dist_traveled_km);
-    fmt::print("  - Service Duration: avg_time = {:.2f} s ({:.2f}% of the main simulation time).\n",
+    fmt::print("  - Travel Duration: avg_time = {:.2f} s ({:.2f}% of the main simulation time).\n",
                avg_time_traveled_s,
-               100.0 * avg_time_traveled_s / platform_config_.simulation_config.simulation_duration_s);
+               100.0 * avg_time_traveled_s / 60 / platform_config_.simulation_config.simulation_duration_min);
     fmt::print("  - Empty Travel: avg_time = {:.2f} s ({:.2f}%), avg_dist = {:.2f} km ({:.2f}%).\n",
                avg_empty_time_traveled_s, 100.0 * avg_empty_time_traveled_s / avg_time_traveled_s,
                avg_empty_dist_traveled_km, 100.0 * avg_empty_dist_traveled_km / avg_dist_traveled_km);
     fmt::print("  - Rebl Travel: avg_time = {:.2f} s ({:.2f}%), avg_dist = {:.2f} km ({:.2f}%).\n",
                avg_rebl_time_traveled_s, 100.0 * avg_rebl_time_traveled_s / avg_time_traveled_s,
                avg_rebl_dist_traveled_km, 100.0 * avg_rebl_dist_traveled_km / avg_dist_traveled_km);
-    fmt::print("  - Load: average_load_dist = {:.2f}, average_load_time = {:.2f}.\n",
+    fmt::print("  - Travel Load: average_load_dist = {:.2f}, average_load_time = {:.2f}.\n",
                total_loaded_dist_traveled_mm * 1.0 / total_dist_traveled_mm,
                total_loaded_time_traveled_ms * 1.0 / total_time_traveled_ms);
 

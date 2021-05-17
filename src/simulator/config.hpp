@@ -41,9 +41,9 @@ struct FleetConfig {
 /// \brief Config that describes the requests.
 struct RequestConfig {
     float request_density = 1.0; // the percentage of taxi data considered
-    double max_pickup_wait_time_s = 300; // the max wait time allowed between a request is generated
+    size_t max_pickup_wait_time_s = 300; // the max wait time allowed between a request is generated
                                          // and the request is picked up
-    double max_onboard_detour = 1.3;     // the max detour raised by ride-sharing when the request in onboard
+    float max_onboard_detour = 1.3;      // the max detour raised by ride-sharing when the request in onboard
 };
 
 /// \brief Config that describes the simulated MoD system.
@@ -56,11 +56,11 @@ struct MoDSystemConfig {
 /// \brief Config that describes the simulation parameters.
 struct SimulationConfig {
     std::string simulation_start_time = ""; // the time of the day that simulation starts
-    double cycle_s = 60; // the cycle every x second the platform dispatches the requests in batch
-    double warmup_duration_s = 1200;   // the period before the main sim to build up states
-    double simulation_duration_s =
-            1800; // the main period during which the simulated data is used for analysis
-    double winddown_duration_s = 1200; // the period after the main sim to close trips
+    size_t cycle_s = 30; // the cycle every x second the platform dispatches the requests in batch
+    size_t warmup_duration_min = 30;   // the period before the main sim to build up states
+    size_t simulation_duration_min =
+            120; // the main period during which the simulated data is used for analysis
+    size_t winddown_duration_min = 39; // the period after the main sim to close trips
 };
 
 /// \brief Config for the output datalog.
@@ -74,7 +74,7 @@ struct VideoConfig {
     bool render_video = false;             // true if we render video
     std::string path_to_output_video = ""; // the path to the output video, empty if no rendering
     size_t frames_per_cycle = 10;          // the number of frames in each cycle
-    double replay_speed = 60; // the speed of the video replay as compared to the actual system time
+    size_t replay_speed = 200;  // the speed of the video replay as compared to the actual system time
 };
 
 /// \brief Config that describes the output modes for datalog and video.
