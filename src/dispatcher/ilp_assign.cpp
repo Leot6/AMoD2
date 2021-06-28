@@ -29,7 +29,6 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     while ( max_cost_ms /= 10 ) { num_length++; }
     auto coe_vt_pair = 1.0 / pow(10, num_length);
     auto ignore_order_penalty = pow(10, 2);
-    auto ignore_order_penalty_high = pow(10, 6);
 
     try {
         // Create an environment.
@@ -58,16 +57,11 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             obj += var_vt_pair[i] * vehicle_trip_pairs[i].best_schedule_cost_ms * coe_vt_pair;
         }
         for (auto j = 0; j < considered_order_ids.size(); j++) {
-            if (ensure_assigning_orders_that_are_picking &&
-                orders[considered_order_ids[j]].status == OrderStatus::PICKING) {
-                    obj += var_order[j] * 1.0 * ignore_order_penalty_high;
-            } else {
-                obj += var_order[j] * 1.0 * ignore_order_penalty;
-            }
+            obj += var_order[j] * 1.0 * ignore_order_penalty;
         }
         model.setObjective(obj, GRB_MINIMIZE);
 
-        // Add constraints.
+        // Add constraint 1: each vehicle can only be assigned at most one schedule / trip.
         for (const auto &vehicle : vehicles) {  // Σ var_vt_pair[i] * Θ_vt(v) <= 1, ∀ v ∈ V (Θ_vt(v) = 1 if v is in vt).
             GRBLinExpr con_this_vehicle = 0.0;
             for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
@@ -77,6 +71,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             }
             model.addConstr(con_this_vehicle <= 1);
         }
+        // Add constraint 2: each request can only be assigned to at most one vehicle.
         for (auto j = 0; j < considered_order_ids.size(); j++) { // Σ var_vt_pair[i] * Θ_vt(order) + var_order[j] = 1.
             const auto &order = orders[considered_order_ids[j]];
             GRBLinExpr con_this_order = 0.0;
@@ -88,6 +83,14 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             }
             con_this_order += var_order[j];
             model.addConstr(con_this_order == 1);
+        }
+        // Add constraint 3: no currently picking order is ignored.
+        if (ensure_assigning_orders_that_are_picking) {
+            for (auto j = 0; j < considered_order_ids.size(); j++) { // var_order[j] = 0, if OrderStatus==PICKING.
+                if (orders[considered_order_ids[j]].status == OrderStatus::PICKING) {
+                    model.addConstr(var_order[j] == 0);
+                }
+            }
         }
 
         // Optimize model.
@@ -119,7 +122,6 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     if (DEBUG_PRINT) {
         TIMER_END(t)
     }
-//    exit(0);
     return selected_vehicle_trip_pair_indices;
 }
 

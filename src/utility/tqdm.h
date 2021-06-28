@@ -167,12 +167,12 @@ class tqdm {
                 printf("%d/%d ", current_iteration, total_iterations);
                 // time and speed
                 if (time_consumed_hour > 0 || time_remaining_hour > 0) {
-                    printf("[%02d:%02d:%02d<%02d:%02d:%02d|%3.1f%s]",
+                    printf("[%02d:%02d:%02d<%02d:%02d:%02d|%3.2f%s]",
                            time_consumed_hour, time_consumed_min, time_consumed_s,
                            time_remaining_hour, time_remaining_min, time_remaining_s,
                            avgrate/div, unit.c_str());
                 } else {
-                    printf("[%02d:%02d<%02d:%02d|%3.1f%s]",
+                    printf("[%02d:%02d<%02d:%02d|%3.2f%s]",
                            time_consumed_min, time_consumed_s,
                            time_remaining_min, time_remaining_s,
                            avgrate/div, unit.c_str());

@@ -80,6 +80,8 @@ python3 ./python/render_video.py
 # or specify a config file
 python3 ./python/render_video.py "./config/platform_demo.yml"
 ```
+### Code Diagram
+<img src="https://github.com/Leot6/AMoD2/blob/main/doc/code-diagram.png" width="720">
 
 ### Code File Structure
 <img src="https://github.com/Leot6/AMoD2/blob/main/doc/code-file-structure.png" width="720">

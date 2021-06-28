@@ -11,7 +11,7 @@
 #include <assert.h>
 
 template <typename RouterFunc>
-void RepositionIdleVehicleToNearestPendingOrder(const std::vector<Order> &orders,
+void RepositionIdleVehiclesToNearestPendingOrder(const std::vector<Order> &orders,
                                                 std::vector<Vehicle> &vehicles,
                                                 RouterFunc &router_func) {
     TIMER_START(t)

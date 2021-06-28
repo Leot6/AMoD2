@@ -59,10 +59,10 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
     }
     if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NONE") {
        rebalancer_ = RebalancerMethod::NONE;
-    } else if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NPO") {
-        rebalancer_ = RebalancerMethod::NPO;
     } else if (platform_config_.mod_system_config.dispatch_config.rebalancer == "RVS") {
         rebalancer_ = RebalancerMethod::RVS;
+    } else if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NPO") {
+        rebalancer_ = RebalancerMethod::NPO;
     }
 
     // Open the output datalog file.
@@ -171,10 +171,10 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
     }
 
     // 4. Reposition idle vehicles to high demand areas.
-    if (rebalancer_ == RebalancerMethod::NPO) {
-        RepositionIdleVehicleToNearestPendingOrder(orders_, vehicles_, router_func_);
-    } else if (rebalancer_ == RebalancerMethod::RVS) {
-        RepositionIdleVehicleToRandomVehicleStation(vehicles_, router_func_);
+    if (rebalancer_ == RebalancerMethod::RVS) {
+        RepositionIdleVehiclesToRandomVehicleStation(vehicles_, router_func_);
+    } else if (rebalancer_ == RebalancerMethod::NPO) {
+        RepositionIdleVehiclesToNearestPendingOrder(orders_, vehicles_, router_func_);
     }
 
     // 5. Write the datalog to file.

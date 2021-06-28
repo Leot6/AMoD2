@@ -181,6 +181,6 @@ enum class DispatcherMethod {
 /// \brief The rebalancing method used to reposition idle vehicles to high demand area.
 enum class RebalancerMethod {
     NONE,      // no rebalancing
-    NPO,       // nearest pending order
     RVS,       // random vehicle station
+    NPO,       // nearest pending order
 };
