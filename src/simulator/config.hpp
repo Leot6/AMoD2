@@ -29,7 +29,7 @@ struct AreaConfig {
 /// \brief Config that describes the dispatch methods.
 struct DispatchConfig {
     std::string dispatcher = "GI";       // the method used to assign orders to vehicles
-    std::string rebalancer = "NONE";     // the method used to reposition idle vehicles to high demand area
+    std::string rebalancer = "NONE";     // the method used to reposition idle vehicles ahead of time
 };
 
 /// \brief Config that describes the fleet.

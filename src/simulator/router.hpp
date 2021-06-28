@@ -35,7 +35,7 @@ private:
     std::vector<Pos> vehicle_stations_;
 
     /// \brief The road network of manhattan, consisting of 4091 poses (e.g. <1, -74.017946, 40.706991>).
-    /// the node id starts from 1.
+    /// Note: the node id starts from 1.
     std::vector<Pos> network_nodes_;
 
     /// \brief The precomputed look-up table, storing the minimum mean travel time path between each road node pair.

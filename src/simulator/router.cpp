@@ -57,7 +57,6 @@ Route Router::operator()(const Pos &origin, const Pos &destination, RoutingType 
             step.duration_ms = mean_travel_time_table_[u - 1][v - 1] * 1000;
             step.poses.push_back(getNodePos(u));
             step.poses.push_back(getNodePos(v));
-//            step.poses = {getNodePos(u), getNodePos(v)};
             route.distance_mm += step.distance_mm;
             route.duration_ms += step.duration_ms;
             route.steps.push_back(step);

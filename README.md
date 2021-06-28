@@ -8,11 +8,12 @@ An autonomous mobility-on-demand (AMoD) simulator, based on [mod-abm-2.0](https:
     - Single-Request Batch Assignment (SBA) [[3]](https://github.com/Leot6/AMoD#references): It takes the new orders for a batch period and assigns them together in a one-to-one match manner, where at most one new order is assigned to a single vehicle.
     - Optimal Schedule Pool (OSP): It takes all picking and pending orders received so far and assigns them together in a multi-to-one match manner, where multiple orders (denoted by a trip) can be assigned to a single vehicle. Trips are also allowed to be reassigned to different vehicles for better system performance. OSP is an improved version of Request Trip Vehicle (RTV) assignment [[4]](https://github.com/Leot6/AMoD#references), it computes all possible vehicle-trip pairs along with the optimal schedule of each pair. The computation of the optimal schedule ensures that no feasible trip is mistakenly ignored. Based on this complete feasible solution space (called optimal schedule pool, each optimal schedule representing a vehicle-trip pair), the optimal assignment policy could be found by an ILP solver.
 - Rebalancer
-    - Naive rebanlancer (NR) [[4]](https://github.com/Leot6/AMoD#references): It repositions idle vehicles to the locations of unassigned orders, under the assumption that it is likely that more requests occur in the same area where all requests cannot be satisfied.
-
+    - Nearest Pending Order (NPO): It repositions idle vehicles to the nearest locations of unassigned pending orders, under the assumption that it is likely that more requests occur in the same area where all requests cannot be satisfied.
+    - Random Vehicle Station (RVS): It repositions idle vehicles randomly to vehicle stations, which uniformly distributed in the city.
+  
 
 ### An Example Simulation Result
-The following simulation result is from a senariao with 400k requests during the whole day. A 30 mins warm up phase and a 30 mins cool down phase are considered.
+The following simulation result is from a scenario with 400k requests during the whole day. A 30 min warm up phase and a 39 min cool down phase are considered.
 ```
 [INFO] Loaded the platform configuration yaml file from AMoD2/config/platform_demo.yml.
 [INFO] Router is ready.  (6.049s)

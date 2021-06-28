@@ -58,11 +58,6 @@ enum class RoutingType {
 /// \param request_time_date The request sent time, same as recorded in the real word.
 /// note: request_time_ms = request_time_date - simulation_start_time_date
 struct Request {
-//    Request(size_t origin_node_id, size_t destination_node_id, uint64_t request_time_ms, std::string request_time_data)
-//            : origin_node_id(origin_node_id),
-//              destination_node_id(destination_node_id),
-//              request_time_ms(request_time_ms),
-//              request_time_date(std::move(request_time_data)) {}
   size_t origin_node_id;
   size_t destination_node_id;
   uint64_t request_time_ms;
@@ -186,5 +181,6 @@ enum class DispatcherMethod {
 /// \brief The rebalancing method used to reposition idle vehicles to high demand area.
 enum class RebalancerMethod {
     NONE,      // no rebalancing
-    NR,        // naive rebalancing
+    NPO,       // nearest pending order
+    RVS,       // random vehicle station
 };

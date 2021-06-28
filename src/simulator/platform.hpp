@@ -8,7 +8,8 @@
 #include "dispatcher/dispatch_gi.hpp"
 #include "dispatcher/dispatch_osp.hpp"
 #include "dispatcher/dispatch_sba.hpp"
-#include "rebalancer/rebalancing_nr.hpp"
+#include "rebalancer/rebalancing_npo.hpp"
+#include "rebalancer/rebalancing_rvs.hpp"
 
 #include <iomanip>
 

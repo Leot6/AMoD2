@@ -4,16 +4,16 @@
 
 #pragma once
 
-#include "rebalancing_nr.hpp"
+#include "rebalancing_npo.hpp"
 
 #include <fmt/format.h>
 #undef NDEBUG
 #include <assert.h>
 
 template <typename RouterFunc>
-void RepositionIdleVehicleThroughNaiveRebalancer(const std::vector<Order> &orders,
-                                                 std::vector<Vehicle> &vehicles,
-                                                 RouterFunc &router_func) {
+void RepositionIdleVehicleToNearestPendingOrder(const std::vector<Order> &orders,
+                                                std::vector<Vehicle> &vehicles,
+                                                RouterFunc &router_func) {
     TIMER_START(t)
 
     // 1. Get a list of the unassigned orders.
@@ -27,7 +27,7 @@ void RepositionIdleVehicleThroughNaiveRebalancer(const std::vector<Order> &order
         for (const auto &vehicle : vehicles) {
             if (vehicle.status == VehicleStatus::IDLE) { num_of_idle_vehicles++; }
         }
-        fmt::print("        -Repositioning {} idle vehicles to {} positions through NR...\n",
+        fmt::print("        -Repositioning {} idle vehicles to {} locations through NPO...\n",
                    num_of_idle_vehicles, pending_order_ids.size());
     }
 

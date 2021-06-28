@@ -29,6 +29,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         vehicles_.push_back(vehicle);
     }
 
+
     // Initialize the simulation times.
     system_time_ms_ = 0;
     cycle_ms_ = static_cast<uint64_t>(platform_config_.simulation_config.cycle_s * 1000);
@@ -58,8 +59,10 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
     }
     if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NONE") {
        rebalancer_ = RebalancerMethod::NONE;
-    } else if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NR") {
-        rebalancer_ = RebalancerMethod::NR;
+    } else if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NPO") {
+        rebalancer_ = RebalancerMethod::NPO;
+    } else if (platform_config_.mod_system_config.dispatch_config.rebalancer == "RVS") {
+        rebalancer_ = RebalancerMethod::RVS;
     }
 
     // Open the output datalog file.
@@ -142,7 +145,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
     for (auto &order : orders_) {
         if (order.status != OrderStatus::PENDING) { continue; }
         // Reject the long waited orders.
-        if (order.request_time_ms + 150000 <= system_time_ms_ || order.max_pickup_time_ms <= system_time_ms_) {
+        if (order.request_time_ms + 150 * 1000 <= system_time_ms_ || order.max_pickup_time_ms <= system_time_ms_) {
             order.status = OrderStatus::WALKAWAY;
         }
     }
@@ -168,8 +171,10 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
     }
 
     // 4. Reposition idle vehicles to high demand areas.
-    if (rebalancer_ == RebalancerMethod::NR) {
-        RepositionIdleVehicleThroughNaiveRebalancer(orders_, vehicles_, router_func_);
+    if (rebalancer_ == RebalancerMethod::NPO) {
+        RepositionIdleVehicleToNearestPendingOrder(orders_, vehicles_, router_func_);
+    } else if (rebalancer_ == RebalancerMethod::RVS) {
+        RepositionIdleVehicleToRandomVehicleStation(vehicles_, router_func_);
     }
 
     // 5. Write the datalog to file.

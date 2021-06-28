@@ -160,6 +160,7 @@ std::vector<SchedulingResult> ComputeSize1TripsForOneVehicle(const std::vector<s
 //        fmt::print("                        +Computing size 1 trip for Vehicle #{}...",
 //                   vehicle.id);
 //    }
+
     std::vector<SchedulingResult> feasible_trips_of_size_1;
     for (auto order_id : considered_order_ids) {
         const auto &order = orders[order_id];

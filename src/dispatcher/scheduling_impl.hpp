@@ -128,7 +128,7 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
                 // The following line is to make sure that a rebalancing vehicle can only be assigned orders when
                 // ensuring its visit to the reposition waypoint with a small detour.
                 // So that it is a valid rebalancing to the reposition waypoint.
-                if (accumulated_time_ms > direct_time_to_reposition_point_ms * 1.2) { return {false, 0}; }
+                if (accumulated_time_ms > direct_time_to_reposition_point_ms * 2) { return {false, 0}; }
             }
         }
 
