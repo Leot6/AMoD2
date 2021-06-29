@@ -24,9 +24,9 @@ SchedulingResult ComputeScheduleOfInsertingOrderToVehicle(const Order &order,
     int violation_type;
     for (const auto &sub_schedule: sub_schedules) {
         const auto num_wps = sub_schedule.size();
-        // insert the order's pickup point
+        // Insert the order's pickup point.
         for (int pickup_idx = 0; pickup_idx <= num_wps; pickup_idx++) {
-            // insert the order's drop-off point
+            // Insert the order's drop-off point.
             for (int dropoff_idx = pickup_idx; dropoff_idx <= num_wps; dropoff_idx++) {
                 auto new_schedule = GenerateScheduleFromSubSchedule(
                         order, vehicle, sub_schedule, pickup_idx, dropoff_idx, router_func);
@@ -40,10 +40,6 @@ SchedulingResult ComputeScheduleOfInsertingOrderToVehicle(const Order &order,
                     }
                     scheduling_result.success = true;
                     scheduling_result.feasible_schedules.push_back(std::move(new_schedule));
-
-//                    // for gi debug
-//                    assert(scheduling_result.best_schedule_idx == 0 && scheduling_result.feasible_schedules.size() == 1);
-//                    return scheduling_result;
                 }
                 if (violation_type > 0) { break; }
             }

@@ -109,19 +109,14 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
                 }
             }
         }
+//        fmt::print("\n[GUROBI] Objective:{}.\n", model.get(GRB_DoubleAttr_ObjVal));
 
     } catch(GRBException e) {
-        std::cout << "Error code = " << e.getErrorCode() << std::endl;
-        std::cout << e.getMessage() << std::endl;
+        fmt::print("\n[GUROBI] Error code = {} ({}).\n", e.getErrorCode(), e.getMessage());
     } catch(...) {
-        std::cout << "Exception during optimization" << std::endl;
+        fmt::print("Exception during optimization\n");
     }
-
-
-
-    if (DEBUG_PRINT) {
-        TIMER_END(t)
-    }
+    if (DEBUG_PRINT) { TIMER_END(t) }
     return selected_vehicle_trip_pair_indices;
 }
 

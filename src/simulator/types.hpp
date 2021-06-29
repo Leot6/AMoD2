@@ -129,7 +129,7 @@ struct Waypoint {
 enum class VehicleStatus {
     IDLE,          // the vehicle has no task and stays stationary
     WORKING,       // the vehicle is serving orders
-    REBALANCING    // the vehicle is moving towards a high demand area
+    REBALANCING    // the vehicle is moving towards a reposition location to improve future performance
 };
 
 inline std::string vehicle_status_to_string(const VehicleStatus &s) {
