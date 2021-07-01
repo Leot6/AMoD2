@@ -40,6 +40,7 @@ struct Step {
 struct Route {
     int32_t distance_mm = 0;
     int32_t duration_ms = 0;
+    //The last step of a route is always consisting of 2 identical points as a flag of the end of the leg.
     std::vector<Step> steps;
 };
 
@@ -155,14 +156,14 @@ struct Vehicle {
     size_t load = 0;
     std::vector<Waypoint> schedule;
     std::vector<size_t> onboard_order_ids;
-    int32_t dist_traveled_mm = 0; // accumulated distance traveled in millimeters (include empty and rebalancing)
-    int32_t loaded_dist_traveled_mm = 0; // accumulated distance traveled, weighted by the load (include empty and rebalancing)
-    int32_t empty_dist_traveled_mm = 0; // accumulated distance traveled, when no passenger onboard (not include rebalancing)
-    int32_t rebl_dist_traveled_mm = 0; // accumulated distance traveled, when executing rebalancing tasks
-    int32_t time_traveled_ms = 0; // accumulated time traveled in milliseconds (include empty and rebalancing)
-    int32_t loaded_time_traveled_ms = 0; // accumulated time traveled, weighted by the load (include empty and rebalancing)
-    int32_t empty_time_traveled_ms = 0; // accumulated time traveled, when no passenger onboard (not include rebalancing)
-    int32_t rebl_time_traveled_ms = 0; // accumulated time traveled, when executing rebalancing tasks
+    uint32_t dist_traveled_mm = 0; // accumulated distance traveled in millimeters (include empty and rebalancing)
+    uint32_t loaded_dist_traveled_mm = 0; // accumulated distance traveled, weighted by the load (include empty and rebalancing)
+    uint32_t empty_dist_traveled_mm = 0; // accumulated distance traveled, when no passenger onboard (not include rebalancing)
+    uint32_t rebl_dist_traveled_mm = 0; // accumulated distance traveled, when executing rebalancing tasks
+    uint32_t time_traveled_ms = 0; // accumulated time traveled in milliseconds (include empty and rebalancing)
+    uint32_t loaded_time_traveled_ms = 0; // accumulated time traveled, weighted by the load (include empty and rebalancing)
+    uint32_t empty_time_traveled_ms = 0; // accumulated time traveled, when no passenger onboard (not include rebalancing)
+    uint32_t rebl_time_traveled_ms = 0; // accumulated time traveled, when executing rebalancing tasks
     // e.g. a vehicle travels 100 (10+10+80) s, consisting of 10 s rebalancing until get an assignment,
     // 10 s picking (no passenger onboard) and 80 s travelling with passenger onboard.
 };

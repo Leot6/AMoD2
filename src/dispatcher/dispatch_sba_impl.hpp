@@ -32,7 +32,7 @@ void AssignOrdersThroughSingleRequestBatchAssign(const std::vector<size_t> &new_
             IlpAssignment(feasible_vehicle_order_pairs, new_received_order_ids, orders, vehicles);
     //    auto selected_vehicle_order_pair_indices = GreedyAssignment(feasible_vehicle_order_pairs);
 
-//// debug code
+//// debug print code
 //    fmt::print("(veh_id, trip_ids, cost_s)\n");
 //    const auto &all_pairs = feasible_vehicle_order_pairs;
 //    const auto &selected_pair_indices = selected_vehicle_order_pair_indices;
@@ -46,7 +46,7 @@ void AssignOrdersThroughSingleRequestBatchAssign(const std::vector<size_t> &new_
 //        fmt::print("\n");
 //    }
 //    fmt::print("selected_pair_indices {}\n", selected_pair_indices);
-//// debug code
+//// debug print code
 
     // 3. Update the assigned vehicles' schedules and the assigned orders' statuses.
     UpdScheduleForVehiclesInSelectedVtPairs(feasible_vehicle_order_pairs, selected_vehicle_order_pair_indices,
@@ -76,7 +76,7 @@ std::vector<SchedulingResult> ComputeFeasibleVehicleOrderPairs(const std::vector
     }
     std::vector<SchedulingResult> feasible_vehicle_order_pairs;
 
-    // Compute the feasible orders for each vehicle.
+    // 1. Compute the feasible orders for each vehicle.
     for (const auto &vehicle: vehicles) {
         std::vector<std::vector<Waypoint>> basic_schedules;
         basic_schedules.push_back(vehicle.schedule);
@@ -89,6 +89,24 @@ std::vector<SchedulingResult> ComputeFeasibleVehicleOrderPairs(const std::vector
         feasible_vehicle_order_pairs.insert(feasible_vehicle_order_pairs.end(),
                                             feasible_vehicle_order_pairs_for_this_vehicle.begin(),
                                             feasible_vehicle_order_pairs_for_this_vehicle.end());
+    }
+
+    // 2. Recompute the schedule cost as the change relative to the vehicle's current working schedule.
+    for (auto &vo_pair : feasible_vehicle_order_pairs) {
+        auto &vehicle = vehicles[vo_pair.vehicle_id];
+        vo_pair.best_schedule_cost_ms -= ComputeScheduleCost(vehicle.schedule, orders, vehicle, system_time_ms);
+        assert(vo_pair.best_schedule_cost_ms >= 0);
+    }
+
+    // 3. Add the basic schedule of each vehicle, which denotes the "empty assign" option in ILP.
+    for (const auto &vehicle: vehicles) {
+        SchedulingResult basic_scheduling_result;
+        basic_scheduling_result.success = true;
+        basic_scheduling_result.vehicle_id = vehicle.id;
+        basic_scheduling_result.feasible_schedules.push_back(vehicle.schedule);
+        basic_scheduling_result.best_schedule_idx = 0;
+        basic_scheduling_result.best_schedule_cost_ms = 0;
+        feasible_vehicle_order_pairs.push_back(std::move(basic_scheduling_result));
     }
 
     if (DEBUG_PRINT) {

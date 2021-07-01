@@ -36,6 +36,12 @@ int main(int argc, const char *argv[]) {
     auto path_to_config_file = root_directory + "/config/platform_demo.yml";
     auto platform_config = load_platform_config(path_to_config_file, root_directory);
 
+    int num_length = 1;
+    auto max_cost_ms = 290010;
+    while ( max_cost_ms /= 10 ) { num_length++; }
+    max_cost_ms = 290010;
+    max_cost_ms -= 100-90;
+    fmt::print("num_length {} ({})", num_length, max_cost_ms);
 
     return 0;
 

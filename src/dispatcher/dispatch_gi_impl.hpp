@@ -54,6 +54,10 @@ void HeuristicInsertionOfOneOrder(Order &order,
         basic_schedules.push_back(vehicle.schedule);
         auto result_this_vehicle = ComputeScheduleOfInsertingOrderToVehicle(
                 order, orders, vehicle, basic_schedules, system_time_ms, router_func);
+        if (!result_this_vehicle.success) { continue; }
+        result_this_vehicle.best_schedule_cost_ms -=
+                ComputeScheduleCost(vehicle.schedule, orders, vehicle, system_time_ms);
+        assert(result_this_vehicle.best_schedule_cost_ms >= 0);
         if (result_this_vehicle.best_schedule_cost_ms < scheduling_result.best_schedule_cost_ms) {
             scheduling_result = std::move(result_this_vehicle);
         }

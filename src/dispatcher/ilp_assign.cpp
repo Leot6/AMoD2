@@ -21,14 +21,14 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     if (vehicle_trip_pairs.size() == 0) { return selected_vehicle_trip_pair_indices; }
 
     // Get the coefficients for vehicle_trip_pair cost and order ignore penalty.
-    uint32_t max_cost_ms = 1;
+    int32_t max_cost_ms = 1;
     for (const auto &vt_pair :  vehicle_trip_pairs) {
         if (vt_pair.best_schedule_cost_ms > max_cost_ms) { max_cost_ms = vt_pair.best_schedule_cost_ms; }
     }
     int num_length = 1;
     while ( max_cost_ms /= 10 ) { num_length++; }
     auto coe_vt_pair = 1.0 / pow(10, num_length);
-    auto ignore_order_penalty = pow(10, 2);
+    auto ignore_order_penalty = pow(10, 3);
 
     try {
         // Create an environment.
@@ -69,7 +69,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
                     con_this_vehicle += var_vt_pair[i];
                 }
             }
-            model.addConstr(con_this_vehicle <= 1);
+            model.addConstr(con_this_vehicle == 1);
         }
         // Add constraint 2: each request can only be assigned to at most one vehicle.
         for (auto j = 0; j < considered_order_ids.size(); j++) { // Σ var_vt_pair[i] * Θ_vt(order) + var_order[j] = 1.
@@ -109,7 +109,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
                 }
             }
         }
-//        fmt::print("\n[GUROBI] Objective:{}.\n", model.get(GRB_DoubleAttr_ObjVal));
+//        fmt::print("\n[GUROBI] Objective:{}\n", model.get(GRB_DoubleAttr_ObjVal));
 
     } catch(GRBException e) {
         fmt::print("\n[GUROBI] Error code = {} ({}).\n", e.getErrorCode(), e.getMessage());
@@ -161,15 +161,3 @@ bool SortVehicleTripPairs(const SchedulingResult &a, const SchedulingResult &b) 
         return (a.best_schedule_cost_ms < b.best_schedule_cost_ms);
     }
 }
-
-//bool SortForIlp(const SchedulingResult &a, const SchedulingResult &b) {
-//    if (a.vehicle_id != b.vehicle_id) {
-//        return (a.vehicle_id < b.vehicle_id);
-//    } else {
-//        if (a.trip_ids.size() != b.trip_ids.size()){
-//            return (a.trip_ids.size() > b.trip_ids.size());
-//        } else {
-//            return (a.best_schedule_cost_ms < b.best_schedule_cost_ms);
-//        }
-//    }
-//}

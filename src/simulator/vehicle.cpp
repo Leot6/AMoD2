@@ -94,10 +94,10 @@ void TruncateRouteByTime(Route &route, uint64_t time_ms) {
 }
 
 std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehicle,
-                     std::vector<Order> &orders,
-                     uint64_t system_time_ms,
-                     uint64_t time_ms,
-                     bool update_vehicle_statistics) {
+                                                                  std::vector<Order> &orders,
+                                                                  uint64_t system_time_ms,
+                                                                  uint64_t time_ms,
+                                                                  bool update_vehicle_statistics) {
     std::vector<size_t> new_picked_order_ids = {};
     std::vector<size_t> new_dropped_order_ids = {};
 

@@ -222,7 +222,7 @@ void UpdScheduleForVehiclesInSelectedVtPairs(std::vector<SchedulingResult> &vehi
 
     for (auto idx : selected_vehicle_trip_pair_indices) {
         auto &vt_pair = vehicle_trip_pairs[idx];
-        if (vt_pair.trip_ids.size() == 0) { continue; }  // empty assign, no change to the vehicle's schedule
+//        if (vt_pair.trip_ids.size() == 0) { continue; }  // "stay same" assign, no change to the vehicle's schedule
         for (auto order_id : vt_pair.trip_ids) { orders[order_id].status = OrderStatus::PICKING; }
         auto &vehicle = vehicles[vt_pair.vehicle_id];
         auto &schedule = vt_pair.feasible_schedules[vt_pair.best_schedule_idx];

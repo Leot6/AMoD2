@@ -10,11 +10,11 @@
 /// \details If the order could not be inserted based on the current vehicle status, result is false.
 struct SchedulingResult {
     bool success = false;
-    std::vector<size_t> trip_ids;  // orders that can be served by a single vehicle through ride-sharing (used in osp)
+    std::vector<size_t> trip_ids;  // denoting orders that can be served by a single vehicle through ride-sharing
     size_t vehicle_id;
     std::vector<std::vector<Waypoint>> feasible_schedules;
     size_t best_schedule_idx;
-    uint32_t best_schedule_cost_ms = std::numeric_limits<uint32_t>::max();
+    int32_t best_schedule_cost_ms = std::numeric_limits<int32_t>::max();
 };
 
 /// \brief Compute all feasible schedules for a vehicle to serve a order.
