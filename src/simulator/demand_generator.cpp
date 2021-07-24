@@ -3,7 +3,6 @@
 
 #include "demand_generator.hpp"
 
-#include <string>
 #include <cstdint>
 #include <algorithm>
 #include <fmt/format.h>
@@ -51,7 +50,7 @@ std::vector<Request> DemandGenerator::operator()(uint64_t target_system_time_ms)
             break;
         }
         current_request_count_++;
-        new_request_idx = init_request_idx_ + (int32_t)(current_request_count_ / request_density_);
+        new_request_idx = init_request_idx_ + (size_t)(current_request_count_ / request_density_);
         requests.push_back(new_request);
     }
     return requests;

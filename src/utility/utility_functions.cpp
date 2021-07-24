@@ -15,12 +15,6 @@ int32_t ConvertTimeDateToSeconds(std::string time_date) {
     return converted_time_sec;
 }
 
-int32_t ComputeTheAccumulatedSecondsFrom0Clock(std::string time_date) {
-  std::string time_0_clock = time_date.substr(0,10) + " 00:00:00";
-  int32_t accumulated_sec = ConvertTimeDateToSeconds(time_date) - ConvertTimeDateToSeconds(time_0_clock);
-  return accumulated_sec;
-}
-
 std::string ConvertTimeSecondToDate(int32_t time_sec) {
     int32_t time_test = time_sec;
     time_t time_sec2;
@@ -32,6 +26,12 @@ std::string ConvertTimeSecondToDate(int32_t time_sec) {
     strftime(time_date2, 64, "%Y-%m-%d %H:%M:%S", &tm_time2);
     std::string converted_time_date = time_date2;
     return converted_time_date;
+}
+
+int32_t ComputeTheAccumulatedSecondsFrom0Clock(std::string time_date) {
+  std::string time_0_clock = time_date.substr(0,10) + " 00:00:00";
+  int32_t accumulated_sec = ConvertTimeDateToSeconds(time_date) - ConvertTimeDateToSeconds(time_0_clock);
+  return accumulated_sec;
 }
 
 std::time_t getTimeStampMs() {

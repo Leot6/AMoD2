@@ -14,7 +14,7 @@
 /// \param vehicles A vector of all vehicles.
 /// \tparam router_func The router func that finds path between two poses.
 template <typename RouterFunc>
-void RepositionIdleVehiclesToNearestPendingOrder(const std::vector<Order> &orders,
+void RepositionIdleVehiclesToNearestPendingOrders(const std::vector<Order> &orders,
                                                 std::vector<Vehicle> &vehicles,
                                                 RouterFunc &router_func);
 

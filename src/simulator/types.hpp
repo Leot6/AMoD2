@@ -23,7 +23,7 @@
 /// \brief Position encoded in longitude/latitude.
 /// \details lon in [-180, 180), lat in [-90, 90]. Undefined behaviors if out of bound.
 struct Pos {
-    size_t node_id = 0;
+    size_t node_id = 1;      // Note: the node id starts from 1, for the provided manhattan data.
     float lon = 0.0;
     float lat = 0.0;
 };
@@ -150,7 +150,8 @@ struct Vehicle {
     size_t id;
     Pos pos;
     VehicleStatus status = VehicleStatus::IDLE;
-    bool schedule_has_been_updated_at_current_epoch = false; // false at the start of each epoch, true if vehicle's schedule is rebuilt
+    bool schedule_has_been_updated_at_current_epoch = false; // false at the start of each epoch,
+    // true if vehicle's schedule is rebuilt. Only used in func UpdScheduleForVehiclesHavingOrdersRemoved().
     Step step_to_pos;
     size_t capacity = 1;
     size_t load = 0;

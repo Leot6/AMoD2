@@ -11,7 +11,7 @@
 #include <assert.h>
 
 template <typename RouterFunc>
-void RepositionIdleVehiclesToRandomVehicleStation(std::vector<Vehicle> &vehicles, RouterFunc &router_func) {
+void RepositionIdleVehiclesToRandomVehicleStations(std::vector<Vehicle> &vehicles, RouterFunc &router_func) {
     TIMER_START(t)
     int num_of_stations = router_func.getNumOfVehicleStations();
     if (DEBUG_PRINT) {

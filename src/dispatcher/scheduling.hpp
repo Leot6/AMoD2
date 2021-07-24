@@ -62,14 +62,9 @@ std::pair<bool, int> ValidateSchedule(const std::vector<Waypoint> &schedule,
                                       uint64_t system_time_ms,
                                       RouterFunc &router_func);
 
-
 /// \brief Quick check if a order is obviously cannot served by a vehicle.
 template <typename RouterFunc>
 bool PassQuickCheck(const Order &order, const Vehicle &vehicle, uint64_t system_time_ms, RouterFunc &router_func);
-
-/// \brief Build the detailed route for a vehicle based on its assigned schedule, and update the vehicle's status.
-template <typename RouterFunc>
-void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func);
 
 /// \brief Build the detailed routes for all vehicles in the selected vehicle-trip pairs.
 template <typename RouterFunc>
@@ -78,6 +73,10 @@ void UpdScheduleForVehiclesInSelectedVtPairs(std::vector<SchedulingResult> &vehi
                                              std::vector<Order> &orders,
                                              std::vector<Vehicle> &vehicles,
                                              RouterFunc &router_func);
+
+/// \brief Build the detailed route for a vehicle based on its assigned schedule, and update the vehicle's status.
+template <typename RouterFunc>
+void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func);
 
 /// \brief Compute the cost (time in millisecond) of serving the current schedule.
 /// \details The cost of serving the schedule is defined as the sum of each order's waiting time and travel delay.

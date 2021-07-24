@@ -8,7 +8,7 @@ uint64_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
                              const std::vector<Order> &orders,
                              const Vehicle &vehicle,
                              uint64_t system_time_ms) {
-    if(schedule.empty()) { return 0; }
+    if (schedule.empty()) { return 0; }
 
     auto accumulated_time_ms = vehicle.step_to_pos.duration_ms;
     auto cost_pickup_delay_ms = 0;

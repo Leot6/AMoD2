@@ -39,7 +39,8 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
         // Create an empty model.
         GRBModel model = GRBModel(env);
 
-        // Create variables (lower_bound, upper_bounds, objective_coefficient (zero here and set later), variable_type)
+        // Create variables
+        //     (lower_bound, upper_bounds, objective_coefficient (zero here and set later), variable_type, var_name)
         std::vector<GRBVar> var_vt_pair; // var_vt_pair[i] = 1 indicates selecting the i_th vehicle_trip_pair.
         for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
             var_vt_pair.push_back(model.addVar(0.0, 1.0, 0.0, GRB_BINARY,
@@ -61,7 +62,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
         }
         model.setObjective(obj, GRB_MINIMIZE);
 
-        // Add constraint 1: each vehicle can only be assigned at most one schedule / trip.
+        // Add constraint 1: each vehicle can only be assigned at most one schedule (trip).
         for (const auto &vehicle : vehicles) {  // Σ var_vt_pair[i] * Θ_vt(v) <= 1, ∀ v ∈ V (Θ_vt(v) = 1 if v is in vt).
             GRBLinExpr con_this_vehicle = 0.0;
             for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
@@ -96,6 +97,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
         // Optimize model.
         model.optimize();
 
+        // Get the result.
         for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
             if (var_vt_pair[i].get(GRB_DoubleAttr_X) == 1){ selected_vehicle_trip_pair_indices.push_back(i); }
         }
@@ -120,13 +122,14 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     return selected_vehicle_trip_pair_indices;
 }
 
-std::vector<size_t> GreedyAssignment(const std::vector<SchedulingResult> &vehicle_trip_pairs) {
+std::vector<size_t> GreedyAssignment(std::vector<SchedulingResult> &vehicle_trip_pairs) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
         fmt::print("                *Greedy assignment with {} pairs...", vehicle_trip_pairs.size());
     }
     std::vector<size_t> selected_vehicle_trip_pair_indices;
     if (vehicle_trip_pairs.size() == 0) { return selected_vehicle_trip_pair_indices; }
+    std::sort(vehicle_trip_pairs.begin(), vehicle_trip_pairs.end(), SortVehicleTripPairs);
     std::vector<size_t> selected_vehicle_ids;
     std::vector<size_t> selected_order_ids;
     for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {

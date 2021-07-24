@@ -156,59 +156,6 @@ bool PassQuickCheck(const Order &order, const Vehicle &vehicle, uint64_t system_
 }
 
 template <typename RouterFunc>
-void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func) {
-    // If a rebalancing vehicle is assigned a trip while ensuring its visit to the reposition waypoint,
-    // its rebalancing task can be cancelled.
-    if (vehicle.status == VehicleStatus::REBALANCING && schedule.size() > 1) {
-        assert(vehicle.schedule.size() == 1);
-        auto removed_wp_idx = 0;
-        for (auto i = 0; i < schedule.size(); i++) {
-            if (schedule[i].op == WaypointOp::REPOSITION) {
-                schedule.erase(schedule.begin() + i);
-                removed_wp_idx = i;
-                break;
-            }
-        }
-        assert(schedule.size() % 2 == 0);
-    }
-
-    // Update vehicle's schedule with detailed route.
-    vehicle.schedule = schedule;
-    auto pre_pos = vehicle.pos;
-    for (auto i = 0; i < vehicle.schedule.size(); i++) {
-        auto &wp = vehicle.schedule[i];
-        auto route = router_func(pre_pos, wp.pos, RoutingType::FULL_ROUTE);
-        wp.route = std::move(route);
-        pre_pos = wp.pos;
-    }
-
-    // Update vehicle's status.
-    vehicle.schedule_has_been_updated_at_current_epoch = true;
-    if (vehicle.schedule.size() > 0) {
-        if (vehicle.schedule[0].op == WaypointOp::PICKUP || vehicle.schedule[0].op == WaypointOp::DROPOFF) {
-            vehicle.status = VehicleStatus::WORKING;
-        } else if (vehicle.schedule[0].op == WaypointOp::REPOSITION) {
-            vehicle.status = VehicleStatus::REBALANCING;
-            assert(vehicle.schedule.size() == 1);
-        } else {
-            assert(false && "Logical error! We should never reach this line of code!");
-        }
-    } else if (vehicle.schedule.size() == 0) {
-        vehicle.status = VehicleStatus::IDLE;
-        return;
-    }
-
-    // Add vehicle's pre-route, when vehicle is currently on the road link instead of a waypoint node.
-    if (vehicle.step_to_pos.duration_ms > 0) {
-        auto &route = vehicle.schedule[0].route;
-        route.duration_ms += vehicle.step_to_pos.duration_ms;
-        route.distance_mm += vehicle.step_to_pos.distance_mm;
-        route.steps.insert(route.steps.begin(), vehicle.step_to_pos);
-        assert(route.steps[0].poses[0].node_id == route.steps[0].poses[1].node_id);
-    }
-}
-
-template <typename RouterFunc>
 void UpdScheduleForVehiclesInSelectedVtPairs(std::vector<SchedulingResult> &vehicle_trip_pairs,
                                              const std::vector<size_t> &selected_vehicle_trip_pair_indices,
                                              std::vector<Order> &orders,
@@ -222,7 +169,6 @@ void UpdScheduleForVehiclesInSelectedVtPairs(std::vector<SchedulingResult> &vehi
 
     for (auto idx : selected_vehicle_trip_pair_indices) {
         auto &vt_pair = vehicle_trip_pairs[idx];
-//        if (vt_pair.trip_ids.size() == 0) { continue; }  // "stay same" assign, no change to the vehicle's schedule
         for (auto order_id : vt_pair.trip_ids) { orders[order_id].status = OrderStatus::PICKING; }
         auto &vehicle = vehicles[vt_pair.vehicle_id];
         auto &schedule = vt_pair.feasible_schedules[vt_pair.best_schedule_idx];
@@ -235,4 +181,54 @@ void UpdScheduleForVehiclesInSelectedVtPairs(std::vector<SchedulingResult> &vehi
     }
 
     if (DEBUG_PRINT) { TIMER_END(t) }
+}
+
+
+template <typename RouterFunc>
+void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func) {
+    // If a rebalancing vehicle is assigned a trip while ensuring its visit to the reposition waypoint,
+    // its rebalancing task can be cancelled.
+    if (vehicle.status == VehicleStatus::REBALANCING && schedule.size() > 1) {
+        assert(vehicle.schedule.size() == 1);
+        for (auto i = 0; i < schedule.size(); i++) {
+            if (schedule[i].op == WaypointOp::REPOSITION) {
+                schedule.erase(schedule.begin() + i);
+                break;
+            }
+        }
+        assert(schedule.size() % 2 == 0);
+    }
+
+    // 1. Update vehicle's schedule with detailed route.
+    vehicle.schedule = schedule;
+    auto pre_pos = vehicle.pos;
+    for (auto &wp : vehicle.schedule) {
+        auto route = router_func(pre_pos, wp.pos, RoutingType::FULL_ROUTE);
+        wp.route = std::move(route);
+        pre_pos = wp.pos;
+    }
+
+    // 2. Update vehicle's status.
+    if (vehicle.schedule.size() > 0) {
+        if (vehicle.schedule[0].op == WaypointOp::PICKUP || vehicle.schedule[0].op == WaypointOp::DROPOFF) {
+            vehicle.status = VehicleStatus::WORKING;
+        } else if (vehicle.schedule[0].op == WaypointOp::REPOSITION) {
+            vehicle.status = VehicleStatus::REBALANCING;
+            assert(vehicle.schedule.size() == 1);
+        } else {
+            assert(false && "Logical error! We should never reach this line of code!");
+        }
+    } else {
+        vehicle.status = VehicleStatus::IDLE;
+        return;
+    }
+
+    // 3. Add vehicle's pre-route, when vehicle is currently on the road link instead of a waypoint node.
+    if (vehicle.step_to_pos.duration_ms > 0) {
+        auto &route = vehicle.schedule[0].route;
+        route.duration_ms += vehicle.step_to_pos.duration_ms;
+        route.distance_mm += vehicle.step_to_pos.distance_mm;
+        route.steps.insert(route.steps.begin(), vehicle.step_to_pos);
+        assert(route.steps[0].poses[0].node_id == route.steps[0].poses[1].node_id);
+    }
 }

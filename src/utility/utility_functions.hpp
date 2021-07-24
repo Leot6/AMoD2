@@ -29,7 +29,7 @@ int32_t ComputeTheAccumulatedSecondsFrom0Clock(std::string time_date);
 std::time_t getTimeStampMs();
 
 #define TIMER_START(start_time) auto start_time = getTimeStampMs();
-#define TIMER_END(start_time) std::cout << "  (" << (getTimeStampMs() - start_time) / 1000.0 * pow(10, 0) << "s)\n";
+#define TIMER_END(start_time) std::cout << "  (" << (getTimeStampMs() - start_time) / 1000.0 << "s)\n";
 
 /// \brief A function to check whether the data file exists.
 void CheckFileExistence(const std::string &path_to_file);

@@ -20,6 +20,7 @@ void TruncateStepByTime(Step &step, uint64_t time_ms) {
            "Input step's distance in truncate_step_by_time() must be positive!");
     assert(step.duration_ms > 0 &&
            "Input step's duration in truncate_step_by_time() must be positive!");
+    assert(time_ms >= 0 && "Time in truncate_step_by_time() must be non negative!");
     assert(time_ms < step.duration_ms && "Ratio in truncate_step_by_time() must be within [0, 1)!");
 
     // Early return.
@@ -28,8 +29,8 @@ void TruncateStepByTime(Step &step, uint64_t time_ms) {
     }
 
     auto ratio = static_cast<double>(time_ms) / step.duration_ms;
-    // When the vehicle is travelling on the link from step.poses[0] to step.poses[1],
-    // it can be treated as it were at point B to do route planning, considering the time left to arrive step.poses[1]
+    // When the vehicle is travelling on the link from point A (step.poses[0]) to point B (step.poses[1]),
+    // it can be treated as it were at point B to do route planning, considering the time left to arrive point B.
     step.poses[0].node_id = step.poses[1].node_id;
     step.poses[0].lon = step.poses[0].lon + ratio * (step.poses[1].lon - step.poses[0].lon);
     step.poses[0].lat = step.poses[0].lat + ratio * (step.poses[1].lat - step.poses[0].lat);
@@ -54,8 +55,7 @@ void TruncateRouteByTime(Route &route, uint64_t time_ms) {
     assert(route.duration_ms > 0 &&
            "Input route's duration in truncate_route_by_time() must be positive!");
     assert(time_ms >= 0 && "Time in truncate_route_by_time() must be non negative!");
-    assert(time_ms < route.duration_ms &&
-           "Time in truncate_route_by_time() must be less than route's duration!");
+    assert(time_ms < route.duration_ms && "Time in truncate_route_by_time() must be less than route's duration!");
 
     // Early return.
     if (time_ms == 0) {
@@ -87,7 +87,9 @@ void TruncateRouteByTime(Route &route, uint64_t time_ms) {
 
     assert(route.steps.size() >= 2 &&
            "Output route in truncate_route_by_time() must have at least 2 steps!");
-    assert(route.distance_mm > 0 &&
+    // normally distance_mm should be larger than 0,
+    // but sometimes the distance_mm could be less than 1 and converted to 0, e.g. 370 * (1-4990/5000) = 0.74 = 0 (int)
+    assert(route.distance_mm >= 0 &&
            "Output route's distance in truncate_route_by_time() must be positive!");
     assert(route.duration_ms > 0 &&
            "Output route's duration in truncate_route_by_time() must be positive!");
@@ -105,7 +107,6 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
     if (time_ms == 0) {
         return {new_picked_order_ids, new_dropped_order_ids};
     }
-    vehicle.schedule_has_been_updated_at_current_epoch = false;
 
     // Move the vehicle's pos by step_to_pos, if it is not empty while the vehicle's schedule is empty.
     // (This case is raised when the vehicle's assigned orders are reassigned to other vehicles and it becomes idle.)
@@ -230,13 +231,13 @@ std::pair<std::vector<size_t>, std::vector<size_t>> UpdVehiclePos(Vehicle &vehic
 
         vehicle.schedule.erase(vehicle.schedule.begin(), vehicle.schedule.begin() + i);
 
-        // As the vehicle is currently on a link, we store its unfinished step to step_to_pos.
+        // If the vehicle is currently on a link, we store its unfinished step to step_to_pos.
         auto first_step_of_route = vehicle.schedule[0].route.steps[0];
         if (first_step_of_route.poses[0].node_id == first_step_of_route.poses[1].node_id) {
-            assert (first_step_of_route.duration_ms != 0);
             vehicle.step_to_pos = first_step_of_route;
+            assert (first_step_of_route.duration_ms != 0);
+            assert (vehicle.pos.node_id == vehicle.step_to_pos.poses[0].node_id);
         }
-
         return {new_picked_order_ids, new_dropped_order_ids};
     }
 

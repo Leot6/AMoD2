@@ -12,7 +12,7 @@
 /// \param vehicles A vector of all vehicles.
 /// \tparam router_func The router func that finds path between two poses.
 template <typename RouterFunc>
-void RepositionIdleVehiclesToRandomVehicleStation(std::vector<Vehicle> &vehicles, RouterFunc &router_func);
+void RepositionIdleVehiclesToRandomVehicleStations(std::vector<Vehicle> &vehicles, RouterFunc &router_func);
 
 // Implementation is put in a separate file for clarity and maintainability.
 #include "rebalancing_rvs_impl.hpp"

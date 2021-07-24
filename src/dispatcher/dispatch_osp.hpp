@@ -93,6 +93,8 @@ std::vector<std::vector<Waypoint>> ComputeBasicSchedulesOfVehicle(const std::vec
                                                                   bool enable_reoptimization);
 
 /// \brief Update the schecule for vehicles, of which the assigned (picking) orders are reassigned to other vehicles.
+/// \details This is only needed when using GreedyAssignment, cause the assignment of GreedyAssignment cannot guarantee
+/// that there is no conflict match when enable reoptimazation.)
 template <typename RouterFunc>
 void UpdScheduleForVehiclesHavingOrdersRemoved(std::vector<Vehicle> &vehicles, RouterFunc &router_func);
 

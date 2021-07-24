@@ -39,7 +39,7 @@ class Platform {
     void RunCycle(std::string progress_phase = "");
 
     /// \brief Advance all vehicles for the given time and move forward the system time.
-    void UpdVehiclesPositions(uint64_t time_ms);
+    void AdvanceVehicles(uint64_t time_ms);
 
     /// \brief Generate orders at the end of each cycle.
     std::vector<size_t> GenerateOrders();

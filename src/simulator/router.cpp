@@ -32,23 +32,23 @@ Route Router::operator()(const Pos &origin, const Pos &destination, RoutingType 
     auto dnid = destination.node_id;
 
     if (type == RoutingType::TIME_ONLY) {
-        route.duration_ms = mean_travel_time_table_[onid - 1][dnid - 1] * 1000;
         route.distance_mm = travel_distance_table_[onid - 1][dnid - 1] * 1000;
+        route.duration_ms = mean_travel_time_table_[onid - 1][dnid - 1] * 1000;
     }
 
     if (type == RoutingType::FULL_ROUTE) {
-        // Build the simple node path from the shortest path table.
+        // 1. Build the simple node path from the shortest path table.
         std::vector<size_t> path;
         path.push_back(dnid);
         // We use int here because some value in the shortest_path_table is -1.
-        int pre_node = shortest_path_table_[onid - 1][dnid - 1];
-        while (pre_node > 0) {
-            path.push_back(pre_node);
-            pre_node = shortest_path_table_[onid - 1][pre_node - 1];
+        int pre_node_id = shortest_path_table_[onid - 1][dnid - 1];
+        while (pre_node_id > 0) {
+            path.push_back(pre_node_id);
+            pre_node_id = shortest_path_table_[onid - 1][pre_node_id - 1];
         }
         std::reverse(path.begin(), path.end());
 
-        // Build the detailed route from the path.
+        // 2. Build the detailed route from the path.
         for (int i = 0; i < path.size()-1; i++) {
             Step step;
             size_t u = path[i];
@@ -62,7 +62,7 @@ Route Router::operator()(const Pos &origin, const Pos &destination, RoutingType 
             route.steps.push_back(step);
         }
 
-        // The last step of a route is always consisting of 2 identical points as a flag of the end of the leg.
+        // 3. The last step of a route is always consisting of 2 identical points as a flag of the end of the leg.
         Step flag_step;
         flag_step.distance_mm = 0;
         flag_step.duration_ms = 0;
@@ -97,7 +97,6 @@ Pos Router::getNodePos(const size_t &node_id) {
 
 std::vector<Pos> LoadNetworkNodesFromCsvFile(std::string path_to_csv) {
     CheckFileExistence(path_to_csv);
-    auto s_time_ms = getTimeStampMs();
     std::vector<Pos> all_nodes;
     std::ifstream data_csv(path_to_csv);       //load the data file
     std::string line;
@@ -137,7 +136,7 @@ std::vector<std::vector<int>> LoadShortestPathTableFromCsvFile(std::string path_
         shortest_path_table.push_back(int_row);
     }
 
-    return shortest_path_table;
+    return std::move(shortest_path_table);
 }
 
 std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string path_to_csv) {
@@ -158,5 +157,5 @@ std::vector<std::vector<float>> LoadMeanTravelTimeTableFromCsvFile(std::string p
         mean_travel_time_table.push_back(float_row);
     }
 
-    return mean_travel_time_table;
+    return std::move(mean_travel_time_table);
 }

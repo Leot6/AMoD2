@@ -27,10 +27,9 @@ void AssignOrdersThroughSingleRequestBatchAssign(const std::vector<size_t> &new_
                                                                          system_time_ms, router_func);
 
     // 2. Compute the assignment policy, indicating which vehicle to pick which order.
-    std::sort(feasible_vehicle_order_pairs.begin(), feasible_vehicle_order_pairs.end(), SortVehicleTripPairs);
-    auto selected_vehicle_order_pair_indices =
-            IlpAssignment(feasible_vehicle_order_pairs, new_received_order_ids, orders, vehicles);
-    //    auto selected_vehicle_order_pair_indices = GreedyAssignment(feasible_vehicle_order_pairs);
+    auto selected_vehicle_order_pair_indices = IlpAssignment(feasible_vehicle_order_pairs,
+                                                             new_received_order_ids, orders, vehicles);
+//    auto selected_vehicle_order_pair_indices = GreedyAssignment(feasible_vehicle_order_pairs);
 
 //// debug print code
 //    fmt::print("(veh_id, trip_ids, cost_s)\n");
@@ -100,13 +99,13 @@ std::vector<SchedulingResult> ComputeFeasibleVehicleOrderPairs(const std::vector
 
     // 3. Add the basic schedule of each vehicle, which denotes the "empty assign" option in ILP.
     for (const auto &vehicle: vehicles) {
-        SchedulingResult basic_scheduling_result;
-        basic_scheduling_result.success = true;
-        basic_scheduling_result.vehicle_id = vehicle.id;
-        basic_scheduling_result.feasible_schedules.push_back(vehicle.schedule);
-        basic_scheduling_result.best_schedule_idx = 0;
-        basic_scheduling_result.best_schedule_cost_ms = 0;
-        feasible_vehicle_order_pairs.push_back(std::move(basic_scheduling_result));
+        SchedulingResult basic_vo_pair;
+        basic_vo_pair.success = true;
+        basic_vo_pair.vehicle_id = vehicle.id;
+        basic_vo_pair.feasible_schedules.push_back(vehicle.schedule);
+        basic_vo_pair.best_schedule_idx = 0;
+        basic_vo_pair.best_schedule_cost_ms = 0;
+        feasible_vehicle_order_pairs.push_back(std::move(basic_vo_pair));
     }
 
     if (DEBUG_PRINT) {

@@ -16,15 +16,14 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
       demand_generator_func_(std::move(_demand_generator_func)) {
 
     // Initialize the fleet.
-    auto s_time_ms = getTimeStampMs();
     const auto &fleet_config = platform_config_.mod_system_config.fleet_config;
     auto num_of_stations = router_func_.getNumOfVehicleStations();
-    Vehicle vehicle;
-    vehicle.capacity = fleet_config.veh_capacity;
     size_t station_idx;
     for (auto i = 0; i < fleet_config.fleet_size; i++) {
         station_idx = i * num_of_stations / fleet_config.fleet_size;
+        Vehicle vehicle;
         vehicle.id = i;
+        vehicle.capacity = fleet_config.veh_capacity;
         vehicle.pos = router_func_.getNodePos(router_func_.getVehicleStationId(station_idx));
         vehicles_.push_back(vehicle);
     }
@@ -56,6 +55,8 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         dispatcher_ = DispatcherMethod::SBA;
     } else if (platform_config_.mod_system_config.dispatch_config.dispatcher == "OSP") {
         dispatcher_ = DispatcherMethod::OSP;
+    } else {
+        assert(false && "[DEBUG] WRONG DISPATCHER SETTING! Please check the name of dispatcher in config!");
     }
     if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NONE") {
        rebalancer_ = RebalancerMethod::NONE;
@@ -63,6 +64,8 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
         rebalancer_ = RebalancerMethod::RVS;
     } else if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NPO") {
         rebalancer_ = RebalancerMethod::NPO;
+    } else {
+        assert(false && "[DEBUG] WRONG REBALANCER SETTING! Please check the name of rebalancer in config!");
     }
 
     // Open the output datalog file.
@@ -122,7 +125,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
     TIMER_START(t)
     if (DEBUG_PRINT) {
         fmt::print("[DEBUG] T = {}s: Epoch {}/{} is running. [{}]\n",
-                   (system_time_ms_) / 1000.0,
+                   (system_time_ms_) / 1000,
                    (system_time_ms_ + cycle_ms_) / cycle_ms_,
                    system_shutdown_time_ms_ / cycle_ms_,
                    progress_phase);
@@ -132,7 +135,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
     if (system_time_ms_ >= main_sim_start_time_ms_ && system_time_ms_ < main_sim_end_time_ms_) {
         // Advance the vehicles frame by frame. (if render_video=false, then frame_ms_=cycle_ms_.)
         for (auto ms = 0; ms < cycle_ms_; ms += frame_ms_) {
-            UpdVehiclesPositions(frame_ms_);
+            AdvanceVehicles(frame_ms_);
             if (ms < cycle_ms_ - frame_ms_ &&
                 platform_config_.output_config.datalog_config.output_datalog) {
                 WriteToDatalog();
@@ -140,11 +143,11 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
         }
     } else {
         // Advance the vehicles by the whole cycle.
-        UpdVehiclesPositions(cycle_ms_);
+        AdvanceVehicles(cycle_ms_);
     }
+        // Reject the long waited orders.
     for (auto &order : orders_) {
         if (order.status != OrderStatus::PENDING) { continue; }
-        // Reject the long waited orders.
         if (order.request_time_ms + 150 * 1000 <= system_time_ms_ || order.max_pickup_time_ms <= system_time_ms_) {
             order.status = OrderStatus::WALKAWAY;
         }
@@ -154,6 +157,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
     const auto new_received_order_ids = GenerateOrders();
 
     // 3. Assign pending orders to vehicles.
+    for (auto &vehicle : vehicles_) { vehicle.schedule_has_been_updated_at_current_epoch = false; }
     if (system_time_ms_ > main_sim_start_time_ms_ && system_time_ms_ <= main_sim_end_time_ms_) {
         if (dispatcher_ == DispatcherMethod::GI) {
             AssignOrdersThroughGreedyInsertion(
@@ -172,9 +176,9 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
 
     // 4. Reposition idle vehicles to high demand areas.
     if (rebalancer_ == RebalancerMethod::RVS) {
-        RepositionIdleVehiclesToRandomVehicleStation(vehicles_, router_func_);
+        RepositionIdleVehiclesToRandomVehicleStations(vehicles_, router_func_);
     } else if (rebalancer_ == RebalancerMethod::NPO) {
-        RepositionIdleVehiclesToNearestPendingOrder(orders_, vehicles_, router_func_);
+        RepositionIdleVehiclesToNearestPendingOrders(orders_, vehicles_, router_func_);
     }
 
     // 5. Write the datalog to file.
@@ -183,8 +187,8 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
         WriteToDatalog();
     }
 
+    // 6. Check the statuses of orders, to make sure that no one is assigned to multiple vehicles.
     if (DEBUG_PRINT) {
-        // 6. Check the statuses of orders, to make sure that no one is assigned to multiple vehicles.
         auto num_of_total_orders = orders_.size();
         auto num_of_complete_orders = 0, num_of_onboard_orders = 0, num_of_picking_orders = 0,
                 num_of_pending_orders = 0, num_of_walkaway_orders = 0;
@@ -230,7 +234,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
 }
 
 template <typename RouterFunc, typename DemandGeneratorFunc>
-void Platform<RouterFunc, DemandGeneratorFunc>::UpdVehiclesPositions(uint64_t time_ms) {
+void Platform<RouterFunc, DemandGeneratorFunc>::AdvanceVehicles(uint64_t time_ms) {
 
     TIMER_START(t)
     if (DEBUG_PRINT) {
@@ -242,13 +246,13 @@ void Platform<RouterFunc, DemandGeneratorFunc>::UpdVehiclesPositions(uint64_t ti
 
     // Do it for each of the vehicles independently.
     for (auto &vehicle : vehicles_) {
-        auto[new_picked_order_ids, new_dropped_order_ids] =
-        UpdVehiclePos(vehicle,
-                      orders_,
-                      system_time_ms_,
-                      time_ms,
-                      (system_time_ms_ > main_sim_start_time_ms_ &&
-                       system_time_ms_ <= main_sim_end_time_ms_));
+        auto [new_picked_order_ids, new_dropped_order_ids] =
+                UpdVehiclePos(vehicle,
+                              orders_,
+                              system_time_ms_,
+                              time_ms,
+                              (system_time_ms_ > main_sim_start_time_ms_ &&
+                               system_time_ms_ <= main_sim_end_time_ms_));
         num_of_picked_orders += new_picked_order_ids.size();
         num_of_dropped_orders += new_dropped_order_ids.size();
     }
@@ -275,12 +279,12 @@ template <typename RouterFunc, typename DemandGeneratorFunc>
 std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::GenerateOrders() {
     TIMER_START(t)
     if (DEBUG_PRINT) {
-        fmt::print("        -Loading new orders...\n");
+        fmt::print("        -Loading new orders... [T = {}s]\n", (system_time_ms_) / 1000.0);
     }
 
     // Get order requests generated during the past cycle.
     auto requests = demand_generator_func_(system_time_ms_);
-    int32_t max_pickup_wait_time = platform_config_.mod_system_config.request_config.max_pickup_wait_time_s * 1000;
+    int32_t max_pickup_wait_time_ms = platform_config_.mod_system_config.request_config.max_pickup_wait_time_s * 1000;
     auto max_detour = platform_config_.mod_system_config.request_config.max_onboard_detour;
 
     // Add the new received requests into the order list.
@@ -295,13 +299,14 @@ std::vector<size_t> Platform<RouterFunc, DemandGeneratorFunc>::GenerateOrders() 
         order.shortest_travel_time_ms =
                 router_func_(order.origin, order.destination, RoutingType::TIME_ONLY).duration_ms;
         // max_wait = min(max_pickup_wait_time, shortest_travel_time * 0.7),
-        // max_total_delay = min(max_pickup_wait_time * 2, MaxWait + ShortestTravelTime * 0.3)
+        // max_total_delay = min(max_pickup_wait_time * 2, max_wait + shortest_travel_time * 0.3).
         order.max_pickup_time_ms =
-                request.request_time_ms
-                + std::min(max_pickup_wait_time, static_cast<int32_t>(order.shortest_travel_time_ms * (2 - max_detour)));
+                order.request_time_ms
+                + std::min(max_pickup_wait_time_ms,
+                           static_cast<int32_t>(order.shortest_travel_time_ms * (2 - max_detour)));
         order.max_dropoff_time_ms =
-                request.request_time_ms + order.shortest_travel_time_ms
-                + std::min(max_pickup_wait_time * 2,
+                order.request_time_ms + order.shortest_travel_time_ms
+                + std::min(max_pickup_wait_time_ms * 2,
                          order.max_pickup_time_ms - order.request_time_ms
                          + static_cast<int32_t>(order.shortest_travel_time_ms * (max_detour - 1)));
         new_received_order_ids.push_back(orders_.size());
@@ -423,14 +428,14 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
     time_consumed_s_1 %= 60;
     int time_consumed_hour_1 = time_consumed_min_1 / 60;
     time_consumed_min_1 %= 60;
-    std::string total_sim_run_time_formatted =
+    std::string total_sim_runtime_formatted =
             fmt::format("{}:{:02d}:{:02d}", time_consumed_hour_1, time_consumed_min_1, time_consumed_s_1);
     int time_consumed_s_2 = main_sim_runtime_s;
     int time_consumed_min_2 = time_consumed_s_2 / 60;
     time_consumed_s_2 %= 60;
     int time_consumed_hour_2 = time_consumed_min_2 / 60;
     time_consumed_min_2 %= 60;
-    std::string main_sim_run_time_formatted =
+    std::string main_sim_runtime_formatted =
             fmt::format("{}:{:02d}:{:02d}", time_consumed_hour_2, time_consumed_min_2, time_consumed_s_2);
 
     // Get some system configurations.
@@ -455,9 +460,9 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
     fmt::print("# Simulation Runtime\n");
     fmt::print("  - Start: {}, End: {}, Time: {}.\n",
                simulation_start_time_real_world_date, simulation_end_time_real_world_date,
-               total_sim_run_time_formatted);
+               total_sim_runtime_formatted);
     fmt::print("  - Main Simulation: init_time = {:.2f} s, runtime = {}, avg_time = {:.2f} s.\n",
-               total_init_time_s, main_sim_run_time_formatted, main_sim_runtime_s / num_of_main_epochs);
+               total_init_time_s, main_sim_runtime_formatted, main_sim_runtime_s / num_of_main_epochs);
 
     // Report the platform configurations.
     fmt::print("# System Configurations\n");
@@ -499,8 +504,8 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
     uint64_t total_order_time_ms = 0;
 
     for (const auto &order : orders_) {
-        if (order.request_time_ms < main_sim_start_time_ms_) { continue; }
-        if (order.request_time_ms >= main_sim_end_time_ms_) { break; }
+        if (order.request_time_ms <= main_sim_start_time_ms_) { continue; }
+        if (order.request_time_ms > main_sim_end_time_ms_) { break; }
         order_count++;
         if (order.status == OrderStatus::WALKAWAY) {
             walkaway_order_count++;
