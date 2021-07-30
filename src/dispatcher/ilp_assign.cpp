@@ -20,13 +20,13 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     std::vector<size_t> selected_vehicle_trip_pair_indices;
     if (vehicle_trip_pairs.size() == 0) { return selected_vehicle_trip_pair_indices; }
 
-    // Get the coefficients for vehicle_trip_pair cost and order ignore penalty.
-    int32_t max_cost_ms = 1;
+    // Get the coefficients for vehicle_trip_pair score and order ignore penalty.
+    int32_t max_score_abs = 1;
     for (const auto &vt_pair :  vehicle_trip_pairs) {
-        if (vt_pair.best_schedule_cost_ms > max_cost_ms) { max_cost_ms = vt_pair.best_schedule_cost_ms; }
+        if (abs(vt_pair.score) > max_score_abs) { max_score_abs = abs(vt_pair.score); }
     }
     int num_length = 1;
-    while ( max_cost_ms /= 10 ) { num_length++; }
+    while ( max_score_abs /= 10 ) { num_length++; }
     auto coe_vt_pair = 1.0 / pow(10, num_length);
     auto ignore_order_penalty = pow(10, 3);
 
@@ -52,15 +52,15 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
                                              fmt::format("var_order_{}", j)));
         }
 
-        // Set objective: minimize Σ var_vt_pair[i] * cost(vt_pair) + Σ var_order[j] * penalty_ignore.
+        // Set objective: maximize Σ var_vt_pair[i] * score(vt_pair) - Σ var_order[j] * penalty_ignore.
         GRBLinExpr obj = 0.0;
         for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
-            obj += var_vt_pair[i] * vehicle_trip_pairs[i].best_schedule_cost_ms * coe_vt_pair;
+            obj += var_vt_pair[i] * vehicle_trip_pairs[i].score * coe_vt_pair;
         }
         for (auto j = 0; j < considered_order_ids.size(); j++) {
-            obj += var_order[j] * 1.0 * ignore_order_penalty;
+            obj += var_order[j] * -1.0 * ignore_order_penalty;
         }
-        model.setObjective(obj, GRB_MINIMIZE);
+        model.setObjective(obj, GRB_MAXIMIZE);
 
         // Add constraint 1: each vehicle can only be assigned at most one schedule (trip).
         for (const auto &vehicle : vehicles) {  // Σ var_vt_pair[i] * Θ_vt(v) <= 1, ∀ v ∈ V (Θ_vt(v) = 1 if v is in vt).

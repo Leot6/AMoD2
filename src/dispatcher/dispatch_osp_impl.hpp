@@ -34,14 +34,14 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
     // 1. Get the list of considered orders, normally including all picking and pending orders.
     //    If re-assigning picking orders to different vehicles is not enabled, only new_received_orders are considered.
     std::vector<size_t> considered_order_ids;
-    if (enable_reoptimization) {
+    if (!enable_reoptimization) {
+        considered_order_ids = new_received_order_ids;
+    } else {
         for (auto &order: orders) {
             if (order.status == OrderStatus::PICKING || order.status == OrderStatus::PENDING) {
                 considered_order_ids.push_back(order.id);
             }
         }
-    } else {
-        considered_order_ids = new_received_order_ids;
     }
 
     if (DEBUG_PRINT) {
@@ -53,18 +53,32 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
             ComputeFeasibleVehicleTripPairs(considered_order_ids, orders, vehicles, system_time_ms, router_func,
                                             cutoff_time_for_a_size_k_trip_search_per_vehicle_ms, enable_reoptimization);
 
-    // 3. Compute the assignment policy, indicating which vehicle to pick which trip.
+    // 3. Score the candidate vehicle_trip_pairs.
+    for (auto &vt_pair : feasible_vehicle_trip_pairs) {
+        ScoreVtPairWithDelay(vt_pair, orders, vehicles, system_time_ms);
+        if (!enable_reoptimization) {
+            assert(vt_pair.score <= 0);
+        }
+        else {
+            if (vt_pair.trip_ids.empty()) {
+                int deviation_due_to_data_structure = 5;   // The deviation will be accumulated at each order.
+                assert(vt_pair.score + deviation_due_to_data_structure * 10 >= 0);
+            }
+        }
+    }
+
+    // 4. Compute the assignment policy based on the scores, indicating which vehicle to pick which trip.
     auto selected_vehicle_trip_pair_indices = IlpAssignment(feasible_vehicle_trip_pairs,
                                                             considered_order_ids, orders, vehicles,
                                                             ensure_ilp_assigning_orders_that_are_picking);
 //    auto selected_vehicle_trip_pair_indices = GreedyAssignment(feasible_vehicle_trip_pairs);
 
-    // 4. Update the assigned vehicles' schedules and the considered orders' statuses.
+    // 5. Update the assigned vehicles' schedules and the considered orders' statuses.
     for (auto order_id : considered_order_ids) { orders[order_id].status = OrderStatus::PENDING; }
     UpdScheduleForVehiclesInSelectedVtPairs(feasible_vehicle_trip_pairs, selected_vehicle_trip_pair_indices,
                                             orders, vehicles, router_func);
 
-//    // 5. Update the schedule of vehicles, of which the assigned (picking) orders are reassigned to other vehicles.
+//    // 6. Update the schedule of vehicles, of which the assigned (picking) orders are reassigned to other vehicles.
 //    //    (This is only needed when using GreedyAssignment.)
 //    if (enable_reoptimization) { UpdScheduleForVehiclesHavingOrdersRemoved(vehicles, router_func); }
 
@@ -149,33 +163,16 @@ std::vector<SchedulingResult> ComputeFeasibleTripsForOneVehicle(const std::vecto
         feasible_trips_of_size_k_minus_1 = feasible_trips_of_size_k;
     }
 
-
-    // 4. Recompute the schedule cost as the change relative to the vehicle's current working schedule.
-    auto vehicle_current_working_schedule_cost_ms =
-            ComputeScheduleCost(vehicle.schedule, orders, vehicle, system_time_ms);
-    for (auto &vt_pair : feasible_trips_for_this_vehicle) {
-        vt_pair.best_schedule_cost_ms -= vehicle_current_working_schedule_cost_ms;
-        if (!enable_reoptimization) { assert(vt_pair.best_schedule_cost_ms >= 0); }
-    }
-
-    // 5. Add the basic schedule of the vehicle, which denotes the "empty assign" option in ILP.
+    // 4. Add the basic schedule of the vehicle, which denotes the "empty assign" option in ILP.
     SchedulingResult basic_vt_pair;
     basic_vt_pair.success = true;
     basic_vt_pair.vehicle_id = vehicle.id;
     basic_vt_pair.feasible_schedules = basic_schedules;
     basic_vt_pair.best_schedule_idx = 0;
-    if (!enable_reoptimization) {
-        basic_vt_pair.best_schedule_cost_ms = 0;
-    } else {
-        basic_vt_pair.best_schedule_cost_ms =
-                ComputeScheduleCost(basic_schedules[0], orders, vehicle, system_time_ms)
-                - vehicle_current_working_schedule_cost_ms;
-        int deviation_due_to_data_structure = 5;   // The deviation will be accumulated at each order.
-        assert(basic_vt_pair.best_schedule_cost_ms <= deviation_due_to_data_structure * 10);
-    }
+    basic_vt_pair.best_schedule_cost_ms = ComputeScheduleCost(basic_schedules[0], orders, vehicle, system_time_ms);
     feasible_trips_for_this_vehicle.push_back(std::move(basic_vt_pair));
 
-    // 6. Add the current working schedule, to have a double ensure about ensure_ilp_assigning_orders_that_are_picking.
+    // 5. Add the current working schedule, to have a double ensure about ensure_ilp_assigning_orders_that_are_picking.
     if (enable_reoptimization) {
         SchedulingResult current_working_vt_pair;
         current_working_vt_pair.success = true;
@@ -185,7 +182,8 @@ std::vector<SchedulingResult> ComputeFeasibleTripsForOneVehicle(const std::vecto
         current_working_vt_pair.vehicle_id = vehicle.id;
         current_working_vt_pair.feasible_schedules.push_back(vehicle.schedule);
         current_working_vt_pair.best_schedule_idx = 0;
-        current_working_vt_pair.best_schedule_cost_ms = 0;
+        current_working_vt_pair.best_schedule_cost_ms =
+                ComputeScheduleCost(vehicle.schedule, orders, vehicle, system_time_ms);
         feasible_trips_for_this_vehicle.push_back(std::move(current_working_vt_pair));
     }
 

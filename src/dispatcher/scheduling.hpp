@@ -15,6 +15,7 @@ struct SchedulingResult {
     std::vector<std::vector<Waypoint>> feasible_schedules;
     size_t best_schedule_idx;
     int32_t best_schedule_cost_ms = std::numeric_limits<int32_t>::max();
+    int32_t score = -std::numeric_limits<int32_t>::max();
 };
 
 /// \brief Compute all feasible schedules for a vehicle to serve a order.
@@ -79,11 +80,18 @@ template <typename RouterFunc>
 void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &schedule, RouterFunc &router_func);
 
 /// \brief Compute the cost (time in millisecond) of serving the current schedule.
-/// \details The cost of serving the schedule is defined as the sum of each order's waiting time and travel delay.
-uint64_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
+/// \details The cost of serving the schedule is defined as the sum of each order's total travel delay.
+uint32_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
                              const std::vector<Order> &orders,
                              const Vehicle &vehicle,
                              uint64_t system_time_ms);
+
+/// \brief Compute the scores of candidate vehicle_trip_pair.
+/// \details The score of is defined as the increased delay.
+void ScoreVtPairWithDelay(SchedulingResult &vehicle_trip_pair,
+                          const std::vector<Order> &orders,
+                          const std::vector<Vehicle> &vehicles,
+                          uint64_t system_time_ms);
 
 // Implementation is put in a separate file for clarity and maintainability.
 #include "scheduling_impl.hpp"

@@ -123,7 +123,7 @@ struct Waypoint {
     Pos pos;
     WaypointOp op;
     size_t order_id;
-    Route route;
+    Route route;   // the route from the previous waypoint's pos to this waypoint's pos
 };
 
 /// \brief The operation associated with a waypoint.

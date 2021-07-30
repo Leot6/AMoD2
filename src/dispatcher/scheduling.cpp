@@ -4,7 +4,7 @@
 
 #include "scheduling.hpp"
 
-uint64_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
+uint32_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
                              const std::vector<Order> &orders,
                              const Vehicle &vehicle,
                              uint64_t system_time_ms) {
@@ -42,4 +42,13 @@ uint64_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
         }
     }
     return cost_total_delay_ms;
+}
+
+void ScoreVtPairWithDelay(SchedulingResult &vehicle_trip_pair,
+                          const std::vector<Order> &orders,
+                          const std::vector<Vehicle> &vehicles,
+                          uint64_t system_time_ms) {
+    auto &vehicle = vehicles[vehicle_trip_pair.vehicle_id];
+    vehicle_trip_pair.score = ComputeScheduleCost(vehicle.schedule, orders, vehicle, system_time_ms)
+                              - vehicle_trip_pair.best_schedule_cost_ms;
 }
