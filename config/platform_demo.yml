@@ -17,20 +17,20 @@ area_config:
   lat_max: 40.8825
 mod_system_config:
   dispatch_config:
-    dispatcher: "OSP"        # 3 options: GI, SBA, OSP
+    dispatcher: "SBA"        # 3 options: GI, SBA, OSP
     rebalancer: "NPO"        # 3 options: NONE, NPO, RVS
   fleet_config:
-    fleet_size: 1000
+    fleet_size: 2000
     veh_capacity: 6
   request_config:
-    request_density: 0.5    # <= 1
+    request_density: 1    # <= 1
     max_pickup_wait_time_min: 5
     max_onboard_detour: 1.3   # < 2
 simulation_config:
-  simulation_start_time: "2016-05-25 18:30:00"  # peak hour: 18:00:00 - 20:00:00
+  simulation_start_time: "2016-05-25 17:30:00"  # peak hour: 18:00:00 - 20:00:00
   cycle_s: 30
   warmup_duration_min: 30        # 30 min
-  simulation_duration_min: 120   # < 1371 min
+  simulation_duration_min: 120   # <= 1370 min
   winddown_duration_min: 39      # 39 min
   debug_print: false
 output_config:

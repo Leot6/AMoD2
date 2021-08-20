@@ -6,7 +6,7 @@ An autonomous mobility-on-demand (AMoD) simulator, based on [mod-abm-2.0](https:
 - Dispatcher
     - Greedy Insertion (GI) [[1]](https://github.com/Leot6/AMoD#references): It assigns orders sequentially to the best available vehicle in a first-in-first-out manner (i.e., an exhaustive version of [[2]](https://github.com/Leot6/AMoD#references)).
     - Single-Request Batch Assignment (SBA) [[3]](https://github.com/Leot6/AMoD#references): It takes the new orders for a batch period and assigns them together in a one-to-one match manner, where at most one new order is assigned to a single vehicle.
-    - Optimal Schedule Pool (OSP): It takes all picking and pending orders received so far and assigns them together in a multi-to-one match manner, where multiple orders (denoted by a trip) can be assigned to a single vehicle. Trips are also allowed to be reassigned to different vehicles for better system performance. OSP is an improved version of Request Trip Vehicle (RTV) assignment [[4]](https://github.com/Leot6/AMoD#references), it computes all possible vehicle-trip pairs along with the optimal schedule of each pair. The computation of the optimal schedule ensures that no feasible trip is mistakenly ignored. Based on this complete feasible solution space (called optimal schedule pool, each optimal schedule representing a vehicle-trip pair), the optimal assignment policy could be found by an ILP solver.
+    - Optimal Schedule Pool (OSP) [[4]](https://github.com/Leot6/AMoD#references): It takes all picking and pending orders received so far and assigns them together in a multi-to-one match manner, where multiple orders (denoted by a trip) can be assigned to a single vehicle. Trips are also allowed to be reassigned to different vehicles for better system performance. OSP is an improved version of Request Trip Vehicle (RTV) assignment [[5]](https://github.com/Leot6/AMoD#references), it computes all possible vehicle-trip pairs along with the optimal schedule of each pair. The computation of the optimal schedule ensures that no feasible trip is mistakenly ignored. Based on this complete feasible solution space (called optimal schedule pool, each optimal schedule representing a vehicle-trip pair), the optimal assignment policy could be found by an ILP solver.
 - Rebalancer
     - Random Vehicle Station (RVS): It repositions idle vehicles randomly to vehicle stations, which uniformly distributed in the city.
     - Nearest Pending Order (NPO): It repositions idle vehicles to the nearest locations of unassigned pending orders, under the assumption that it is likely that more requests occur in the same area where all requests cannot be satisfied.
@@ -16,31 +16,31 @@ An autonomous mobility-on-demand (AMoD) simulator, based on [mod-abm-2.0](https:
 The following simulation result is from a scenario with 400k requests during the whole day. A 30 min warm up phase and a 39 min cool down phase are considered.
 ```
 [INFO] Loaded the platform configuration yaml file from AMoD2/config/platform_demo.yml.
-[INFO] Router is ready.  (6.049s)
-[INFO] Demand Generator is ready.  (2.043s)
+[INFO] Router is ready.  (5.396s)
+[INFO] Demand Generator is ready.  (1.98s)
 [INFO] Platform is ready.
 -------------------------------------------------------------------------------------------------
- AMoD: 100.0% ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿2878/2878 [04:30<00:00|10.6Hz]
+ AMoD: 100.0% ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿2878/2878 [06:25<00:00|7.46Hz]
 [INFO] Simulation completed. Creating report.
 -------------------------------------------------------------------------------------------------
 # Simulation Runtime
-  - Start: 2021-04-30 17:19:03, End: 2021-04-30 17:23:33, Time: 0:04:30.
-  - Main Simulation: init_time = 8.09 s, runtime = 0:04:18, avg_time = 0.09 s.
+  - Start: 2021-08-20 16:40:52, End: 2021-08-20 16:47:18, Time: 0:06:25.
+  - Main Simulation: init_time = 7.38 s, runtime = 0:06:07, avg_time = 0.13 s.
 # System Configurations
   - From 00:00:00 to 23:59:00. (main simulation between 00:30:00 and 23:20:00).
   - Fleet Config: size = 2000, capacity = 6. (60 + 2740 + 78 = 2878 epochs).
   - Order Config: density = 1 (400k), max_wait = 300 s. (Δt = 30 s).
-  - Dispatch Config: dispatcher = SBA, rebalancer = NR.
+  - Dispatch Config: dispatcher = SBA, rebalancer = NPO.
   - Video Config: false, frame_length = 10 s, fps = 20, duration = 411 s.
-# Orders (359946/387507)
-  - complete = 359944 (92.89%), onboard = 2 (0.00%), total_service = 359946 (92.89%).
-  - avg_shortest_travel = 610.12 s, avg_wait = 134.31 s, avg_delay = 264.44 s.
+# Orders (364232/387512)
+  - complete = 364230 (93.99%), onboard = 2 (0.00%), total_service = 364232 (93.99%).
+  - avg_shortest_travel = 609.48 s, avg_wait = 124.49 s, avg_delay = 216.20 s.
 # Vehicles (2000)
-  - Service Distance: total_dist = 700051.24 km, avg_dist = 350.03 km.
-  - Service Duration: avg_time = 67113.28 s (81.65% of the main simulation time).
-  - Empty Travel: avg_time = 1948.72 s (2.90%), avg_dist = 8.83 km (2.52%).
-  - Rebl Travel: avg_time = 4284.35 s (6.38%), avg_dist = 31.40 km (8.97%).
-  - Load: average_load_dist = 1.85, average_load_time = 1.97.
+  - Travel Distance: total_dist = 702260.47 km, avg_dist = 351.13 km.
+  - Travel Duration: avg_time = 66621.76 s (81.05% of the main simulation time).
+  - Empty Travel: avg_time = 2457.29 s (3.69%), avg_dist = 10.99 km (3.13%).
+  - Rebl Travel: avg_time = 4594.70 s (6.90%), avg_dist = 33.93 km (9.66%).
+  - Travel Load: average_load_dist = 1.78, average_load_time = 1.91.
 -------------------------------------------------------------------------------------------------
 ```
 
@@ -114,4 +114,5 @@ Special thanks to [wenjian0202](https://github.com/wenjian0202) and [KevinLADLee
 1. Tong, Y., Zeng, Y., Zhou, Z., Chen, L., Ye, J. and Xu, K., 2018. [A unified approach to route planning for shared mobility](https://ink.library.smu.edu.sg/cgi/viewcontent.cgi?article=5889&context=sis_research). Proceedings of the VLDB Endowment, 11(11), p.1633.
 2. Ma, S., Zheng, Y. and Wolfson, O., 2013, April. [T-share: A large-scale dynamic taxi ridesharing service](https://www.db.ics.keio.ac.jp/seminar/2013/20131126_kita/Taxi%20ridesharing.pdf). In 2013 IEEE 29th International Conference on Data Engineering (ICDE) (pp. 410-421). IEEE.
 3. Simonetto, A., Monteil, J. and Gambella, C., 2019. [Real-time city-scale ridesharing via linear assignment problems](https://arxiv.org/pdf/1902.10676.pdf). Transportation Research Part C: Emerging Technologies, 101, pp.208-232.
-4. Alonso-Mora, J., Samaranayake, S., Wallar, A., Frazzoli, E. and Rus, D., 2017. [On-demand high-capacity ride-sharing via dynamic trip-vehicle assignment](https://www.pnas.org/content/114/3/462.short). Proceedings of the National Academy of Sciences, 114(3), pp.462-467
+4. Li, C., Parker, D. and Hao, Q., 2021, February. [Optimal Online Dispatch for High-Capacity Shared Autonomous Mobility-on-Demand Systems](https://www.cs.bham.ac.uk/~parkerdx/papers/icra21samod.pdf). In Proc. IEEE International Conference on Robotics and Automation (ICRA'21).
+5. Alonso-Mora, J., Samaranayake, S., Wallar, A., Frazzoli, E. and Rus, D., 2017. [On-demand high-capacity ride-sharing via dynamic trip-vehicle assignment](https://www.pnas.org/content/114/3/462.short). Proceedings of the National Academy of Sciences, 114(3), pp.462-467
