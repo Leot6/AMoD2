@@ -39,6 +39,7 @@ private:
     std::vector<Pos> network_nodes_;
 
     /// \brief The precomputed look-up table, storing the minimum mean travel time path between each road node pair.
+    /// Note: Using "int" instead of "size_t" is because that some value in the shortest_path_table is -1.
     std::vector<std::vector<int>> shortest_path_table_;
 
     /// \brief The precomputed look-up table, storing the mean travel time between each road node pair.

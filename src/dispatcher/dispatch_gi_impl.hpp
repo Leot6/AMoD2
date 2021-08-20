@@ -55,8 +55,7 @@ void HeuristicInsertionOfOneOrder(Order &order,
         auto result_this_vehicle = ComputeScheduleOfInsertingOrderToVehicle(
                 order, orders, vehicle, basic_schedules, system_time_ms, router_func);
         if (!result_this_vehicle.success) { continue; }
-        ScoreVtPairWithDelay(result_this_vehicle, orders, vehicles, system_time_ms);
-        assert(result_this_vehicle.score <= 0);
+        ScoreVtPairWithIncreasedDelay(result_this_vehicle, orders, vehicles, system_time_ms);
         if (result_this_vehicle.score > scheduling_result.score) {
             scheduling_result = std::move(result_this_vehicle);
         }

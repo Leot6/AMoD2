@@ -20,16 +20,6 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     std::vector<size_t> selected_vehicle_trip_pair_indices;
     if (vehicle_trip_pairs.size() == 0) { return selected_vehicle_trip_pair_indices; }
 
-    // Get the coefficients for vehicle_trip_pair score and order ignore penalty.
-    int32_t max_score_abs = 1;
-    for (const auto &vt_pair :  vehicle_trip_pairs) {
-        if (abs(vt_pair.score) > max_score_abs) { max_score_abs = abs(vt_pair.score); }
-    }
-    int num_length = 1;
-    while ( max_score_abs /= 10 ) { num_length++; }
-    auto coe_vt_pair = 1.0 / pow(10, num_length);
-    auto ignore_order_penalty = pow(10, 3);
-
     try {
         // Create an environment.
         GRBEnv env = GRBEnv(true);
@@ -52,18 +42,16 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
                                              fmt::format("var_order_{}", j)));
         }
 
-        // Set objective: maximize Σ var_vt_pair[i] * score(vt_pair) - Σ var_order[j] * penalty_ignore.
+        // Set objective: maximize Σ var_vt_pair[i] * score(vt_pair).
         GRBLinExpr obj = 0.0;
         for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
-            obj += var_vt_pair[i] * vehicle_trip_pairs[i].score * coe_vt_pair;
-        }
-        for (auto j = 0; j < considered_order_ids.size(); j++) {
-            obj += var_order[j] * -1.0 * ignore_order_penalty;
+            obj += var_vt_pair[i] * (vehicle_trip_pairs[i].score);
         }
         model.setObjective(obj, GRB_MAXIMIZE);
 
-        // Add constraint 1: each vehicle can only be assigned at most one schedule (trip).
-        for (const auto &vehicle : vehicles) {  // Σ var_vt_pair[i] * Θ_vt(v) <= 1, ∀ v ∈ V (Θ_vt(v) = 1 if v is in vt).
+        // Add constraint 1: each vehicle (v) can only be assigned at most one schedule (trip).
+        //     Σ var_vt_pair[i] * Θ_vt(v) = 1, ∀ v ∈ V. (Θ_vt(v) = 1 if v is in vt).
+        for (const auto &vehicle : vehicles) {
             GRBLinExpr con_this_vehicle = 0.0;
             for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
                 if (vehicle_trip_pairs[i].vehicle_id == vehicle.id) {
@@ -72,8 +60,9 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             }
             model.addConstr(con_this_vehicle == 1);
         }
-        // Add constraint 2: each request can only be assigned to at most one vehicle.
-        for (auto j = 0; j < considered_order_ids.size(); j++) { // Σ var_vt_pair[i] * Θ_vt(order) + var_order[j] = 1.
+        // Add constraint 2: each order/request (r) can only be assigned to at most one vehicle.
+        //     Σ var_vt_pair[i] * Θ_vt(r) + var_order[j] = 1, ∀ r ∈ R. (Θ_vt(order) = 1 if r is in vt).
+        for (auto j = 0; j < considered_order_ids.size(); j++) {
             const auto &order = orders[considered_order_ids[j]];
             GRBLinExpr con_this_order = 0.0;
             for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
@@ -86,8 +75,9 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             model.addConstr(con_this_order == 1);
         }
         // Add constraint 3: no currently picking order is ignored.
+        //     var_order[j] = 0, if OrderStatus==PICKING, ∀ r ∈ R.
         if (ensure_assigning_orders_that_are_picking) {
-            for (auto j = 0; j < considered_order_ids.size(); j++) { // var_order[j] = 0, if OrderStatus==PICKING.
+            for (auto j = 0; j < considered_order_ids.size(); j++) {
                 if (orders[considered_order_ids[j]].status == OrderStatus::PICKING) {
                     model.addConstr(var_order[j] == 0);
                 }
@@ -111,6 +101,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
                 }
             }
         }
+
 //        fmt::print("\n[GUROBI] Objective:{}\n", model.get(GRB_DoubleAttr_ObjVal));
 
     } catch(GRBException e) {

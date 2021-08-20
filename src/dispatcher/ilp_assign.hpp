@@ -7,7 +7,7 @@
 #include "scheduling.hpp"
 
 /// \brief A function using an ILP solver (Gurobi) to compute the optimal assignment.
-/// It returns the indices of selected vehicle_trip_pairs.
+/// It returns the indices of selected vehicle_trip_pairs, which maximize the overall score.
 std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_trip_pairs,
                                   const std::vector<size_t> &considered_order_ids,
                                   const std::vector<Order> &orders,

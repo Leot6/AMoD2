@@ -32,7 +32,7 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
     const bool ensure_ilp_assigning_orders_that_are_picking = true;
 
     // 1. Get the list of considered orders, normally including all picking and pending orders.
-    //    If re-assigning picking orders to different vehicles is not enabled, only new_received_orders are considered.
+    //    If re-assigning picking orders to different vehicles is enabled, all picking and pending orders are considered.
     std::vector<size_t> considered_order_ids;
     if (!enable_reoptimization) {
         considered_order_ids = new_received_order_ids;
@@ -48,24 +48,14 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
         fmt::print("        -Assigning {} orders to vehicles through OSP...\n", considered_order_ids.size());
     }
 
-    // 2. Compute all possible vehicle trip pairs, each indicating the orders in the trip can be served by the vehicle.
+    // 2. Compute all feasible vehicle trip pairs, each indicating the orders in the trip can be served by the vehicle.
     auto feasible_vehicle_trip_pairs =
             ComputeFeasibleVehicleTripPairs(considered_order_ids, orders, vehicles, system_time_ms, router_func,
                                             cutoff_time_for_a_size_k_trip_search_per_vehicle_ms, enable_reoptimization);
 
     // 3. Score the candidate vehicle_trip_pairs.
-    for (auto &vt_pair : feasible_vehicle_trip_pairs) {
-        ScoreVtPairWithDelay(vt_pair, orders, vehicles, system_time_ms);
-        if (!enable_reoptimization) {
-            assert(vt_pair.score <= 0);
-        }
-        else {
-            if (vt_pair.trip_ids.empty()) {
-                int deviation_due_to_data_structure = 5;   // The deviation will be accumulated at each order.
-                assert(vt_pair.score + deviation_due_to_data_structure * 10 >= 0);
-            }
-        }
-    }
+    ScoreVtPairsWithNumOfOrdersAndIncreasedDelay(feasible_vehicle_trip_pairs, orders, vehicles, system_time_ms,
+                                                 enable_reoptimization);
 
     // 4. Compute the assignment policy based on the scores, indicating which vehicle to pick which trip.
     auto selected_vehicle_trip_pair_indices = IlpAssignment(feasible_vehicle_trip_pairs,
@@ -210,9 +200,7 @@ std::vector<SchedulingResult> ComputeSize1TripsForOneVehicle(const std::vector<s
         auto scheduling_result_this_pair = ComputeScheduleOfInsertingOrderToVehicle(
                 order, orders, vehicle, basic_schedules, system_time_ms, router_func);
         if (scheduling_result_this_pair.success) {
-            std::vector<size_t> trip;
-            trip.push_back(order_id);
-            scheduling_result_this_pair.trip_ids = trip;
+            scheduling_result_this_pair.trip_ids.push_back(order_id);
             feasible_trips_of_size_1.push_back(std::move(scheduling_result_this_pair));
         }
     }

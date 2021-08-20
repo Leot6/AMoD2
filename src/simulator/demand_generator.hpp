@@ -35,7 +35,7 @@ private:
     /// \brief The number of requests that have been generated.
     size_t current_request_count_ = 0;
 
-    /// \brief // The percentage of taxi data considered.
+    /// \brief The percentage of taxi data considered.
     float request_density_ = 1.0;
 };
 

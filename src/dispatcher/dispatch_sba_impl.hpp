@@ -27,10 +27,7 @@ void AssignOrdersThroughSingleRequestBatchAssign(const std::vector<size_t> &new_
                                                                          system_time_ms, router_func);
 
     // 2. Score the candidate vehicle_order_pairs.
-    for (auto &vo_pair : feasible_vehicle_order_pairs) {
-        ScoreVtPairWithDelay(vo_pair, orders, vehicles, system_time_ms);
-        assert(vo_pair.score <= 0);
-    }
+    ScoreVtPairsWithNumOfOrdersAndIncreasedDelay(feasible_vehicle_order_pairs, orders, vehicles, system_time_ms);
 
     // 3. Compute the assignment policy based on the scores, indicating which vehicle to pick which order.
     auto selected_vehicle_order_pair_indices = IlpAssignment(feasible_vehicle_order_pairs,
