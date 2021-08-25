@@ -30,9 +30,9 @@ void AssignOrdersThroughSingleRequestBatchAssign(const std::vector<size_t> &new_
     ScoreVtPairsWithNumOfOrdersAndIncreasedDelay(feasible_vehicle_order_pairs, orders, vehicles, system_time_ms);
 
     // 3. Compute the assignment policy based on the scores, indicating which vehicle to pick which order.
-    auto selected_vehicle_order_pair_indices = IlpAssignment(feasible_vehicle_order_pairs,
-                                                             new_received_order_ids, orders, vehicles);
-//    auto selected_vehicle_order_pair_indices = GreedyAssignment(feasible_vehicle_order_pairs);
+//    auto selected_vehicle_order_pair_indices = IlpAssignment(feasible_vehicle_order_pairs,
+//                                                             new_received_order_ids, orders, vehicles);
+    auto selected_vehicle_order_pair_indices = GreedyAssignment(feasible_vehicle_order_pairs);
 
     // 4. Update the assigned vehicles' schedules and the assigned orders' statuses.
     UpdScheduleForVehiclesInSelectedVtPairs(feasible_vehicle_order_pairs, selected_vehicle_order_pair_indices,

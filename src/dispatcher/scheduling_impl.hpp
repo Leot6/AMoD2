@@ -207,6 +207,7 @@ void UpdVehicleScheduleAndBuildRoute(Vehicle &vehicle, std::vector<Waypoint> &sc
         wp.route = std::move(route);
         pre_pos = wp.pos;
     }
+    vehicle.schedule_has_been_updated_at_current_epoch = true;
 
     // 2. Update vehicle's status.
     if (vehicle.schedule.size() > 0) {

@@ -18,7 +18,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
 /// It returns the indices of selected vehicle_trip_pairs.
 std::vector<size_t> GreedyAssignment(std::vector<SchedulingResult> &vehicle_trip_pairs);
 
-/// \brief A function used to sort the vehicle_trip_pairs, decrease as the trip size and increase as the cost.
+/// \brief A function used to sort the vehicle_trip_pairs, decrease as the score.
 bool SortVehicleTripPairs(const SchedulingResult &a, const SchedulingResult &b);
 
 

@@ -21,34 +21,33 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     if (vehicle_trip_pairs.size() == 0) { return selected_vehicle_trip_pair_indices; }
 
     try {
-        // Create an environment.
+        // 1. Create an environment.
         GRBEnv env = GRBEnv(true);
         env.set("LogToConsole", "0");
         env.start();
 
-        // Create an empty model.
+        // 2. Create an empty model.
         GRBModel model = GRBModel(env);
 
-        // Create variables
-        //     (lower_bound, upper_bounds, objective_coefficient (zero here and set later), variable_type, var_name)
+        // 3. Create variables
+        //     (lower_bound, upper_bounds, objective_coefficient (zero here and set later), variable_type)
         std::vector<GRBVar> var_vt_pair; // var_vt_pair[i] = 1 indicates selecting the i_th vehicle_trip_pair.
         for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
-            var_vt_pair.push_back(model.addVar(0.0, 1.0, 0.0, GRB_BINARY,
-                                          fmt::format("var_vt_pair_{}", i)));
+            var_vt_pair.push_back(model.addVar(0.0, 1.0, 0.0, GRB_BINARY));
         }
         std::vector<GRBVar> var_order;  // var_order[j] = 0 indicates assigning the i_th order in the list.
         for (auto j = 0; j < considered_order_ids.size(); j++) {
-            var_order.push_back(model.addVar(0.0, 1.0, 0.0, GRB_BINARY,
-                                             fmt::format("var_order_{}", j)));
+            var_order.push_back(model.addVar(0.0, 1.0, 0.0, GRB_BINARY));
         }
 
-        // Set objective: maximize Σ var_vt_pair[i] * score(vt_pair).
+        // 4. Set objective: maximize Σ var_vt_pair[i] * score(vt_pair).
         GRBLinExpr obj = 0.0;
         for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
             obj += var_vt_pair[i] * (vehicle_trip_pairs[i].score);
         }
         model.setObjective(obj, GRB_MAXIMIZE);
 
+        // 5. Add constraints.
         // Add constraint 1: each vehicle (v) can only be assigned at most one schedule (trip).
         //     Σ var_vt_pair[i] * Θ_vt(v) = 1, ∀ v ∈ V. (Θ_vt(v) = 1 if v is in vt).
         for (const auto &vehicle : vehicles) {
@@ -84,10 +83,10 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
             }
         }
 
-        // Optimize model.
+        // 6. Optimize model.
         model.optimize();
 
-        // Get the result.
+        // 7. Get the result.
         for (auto i = 0; i < vehicle_trip_pairs.size(); i++) {
             if (var_vt_pair[i].get(GRB_DoubleAttr_X) == 1){ selected_vehicle_trip_pair_indices.push_back(i); }
         }
@@ -107,7 +106,7 @@ std::vector<size_t> IlpAssignment(const std::vector<SchedulingResult> &vehicle_t
     } catch(GRBException e) {
         fmt::print("\n[GUROBI] Error code = {} ({}).\n", e.getErrorCode(), e.getMessage());
     } catch(...) {
-        fmt::print("Exception during optimization\n");
+        fmt::print("[GUROBI] Exception during optimization\n");
     }
     if (DEBUG_PRINT) { TIMER_END(t) }
     return selected_vehicle_trip_pair_indices;
@@ -149,9 +148,5 @@ std::vector<size_t> GreedyAssignment(std::vector<SchedulingResult> &vehicle_trip
 }
 
 bool SortVehicleTripPairs(const SchedulingResult &a, const SchedulingResult &b) {
-    if (a.trip_ids.size() != b.trip_ids.size()){
-        return (a.trip_ids.size() > b.trip_ids.size());
-    } else {
-        return (a.best_schedule_cost_ms < b.best_schedule_cost_ms);
-    }
+    return (a.score > b.score);
 }

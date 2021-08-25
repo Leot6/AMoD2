@@ -75,9 +75,7 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
     if (DEBUG_PRINT) {
         int num_of_assigned_orders = 0;
         for (auto order_id : considered_order_ids) {
-            if (orders[order_id].status == OrderStatus::PICKING) {
-                num_of_assigned_orders++;
-            }
+            if (orders[order_id].status == OrderStatus::PICKING) { num_of_assigned_orders++; }
         }
         fmt::print("            +Assigned orders: {}", num_of_assigned_orders);
         TIMER_END(t)

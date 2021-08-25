@@ -85,5 +85,4 @@ void ScoreVtPairsWithNumOfOrdersAndIncreasedDelay(std::vector<SchedulingResult> 
     for (auto &vt_pair : vehicle_trip_pairs) {
         vt_pair.score = reward_for_serving_an_order * vt_pair.trip_ids.size() + vt_pair.score / 1e3;
     }
-
 }
