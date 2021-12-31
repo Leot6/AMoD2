@@ -86,21 +86,12 @@ uint32_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
                              const Vehicle &vehicle,
                              uint64_t system_time_ms);
 
-/// \brief Compute the scores of candidate vehicle_trip_pair.
-/// \details The score is defined as minus the increased delay. The shorter the delay, the higher the score.
-void ScoreVtPairWithIncreasedDelay(SchedulingResult &vehicle_trip_pair,
-                                   const std::vector<Order> &orders,
-                                   const std::vector<Vehicle> &vehicles,
-                                   uint64_t system_time_ms,
-                                   bool is_reoptimization = false);
-
 /// \brief Compute the scores of all candidate vehicle_trip_pairs.
-/// \details The score is defined as the reward of serving orders minus the increased delay.
-void ScoreVtPairsWithNumOfOrdersAndIncreasedDelay(std::vector<SchedulingResult> &vehicle_trip_pairs,
-                                                 const std::vector<Order> &orders,
-                                                 const std::vector<Vehicle> &vehicles,
-                                                 uint64_t system_time_ms,
-                                                 bool is_reoptimization = false);
+/// \details The score is defined as the reward of serving orders minus the schedule cost.
+void ScoreVtPairsWithNumOfOrdersAndScheduleCost(std::vector<SchedulingResult> &vehicle_trip_pairs,
+                                                const std::vector<Order> &orders,
+                                                const std::vector<Vehicle> &vehicles,
+                                                uint64_t system_time_ms);
 
 // Implementation is put in a separate file for clarity and maintainability.
 #include "scheduling_impl.hpp"

@@ -45,7 +45,8 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
     }
 
     if (DEBUG_PRINT) {
-        fmt::print("        -Assigning {} orders to vehicles through OSP...\n", considered_order_ids.size());
+        fmt::print("        -Assigning {} orders to vehicles through OSP...\n",
+                   considered_order_ids.size());
     }
 
     // 2. Compute all feasible vehicle trip pairs, each indicating the orders in the trip can be served by the vehicle.
@@ -54,8 +55,7 @@ void AssignOrdersThroughOptimalSchedulePoolAssign(const std::vector<size_t> &new
                                             cutoff_time_for_a_size_k_trip_search_per_vehicle_ms, enable_reoptimization);
 
     // 3. Score the candidate vehicle_trip_pairs.
-    ScoreVtPairsWithNumOfOrdersAndIncreasedDelay(feasible_vehicle_trip_pairs, orders, vehicles, system_time_ms,
-                                                 enable_reoptimization);
+    ScoreVtPairsWithNumOfOrdersAndScheduleCost(feasible_vehicle_trip_pairs, orders, vehicles, system_time_ms);
 
     // 4. Compute the assignment policy based on the scores, indicating which vehicle to pick which trip.
     auto selected_vehicle_trip_pair_indices = IlpAssignment(feasible_vehicle_trip_pairs,
@@ -253,6 +253,7 @@ std::vector<SchedulingResult> ComputeSizeKTripsForOneVehicle(
                 for (auto idx = 0; idx < k; idx++) {
                     auto sub_trip_ids = new_trip_k_ids;
                     sub_trip_ids.erase(sub_trip_ids.begin() + idx);
+                    assert(sub_trip_ids.size() == k - 1);
                     if (std::find(feasible_trip_ids_of_size_k_minus_1.begin(),
                                   feasible_trip_ids_of_size_k_minus_1.end(),
                                   sub_trip_ids) == feasible_trip_ids_of_size_k_minus_1.end()) {

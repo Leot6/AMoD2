@@ -19,7 +19,8 @@ void AssignOrdersThroughSingleRequestBatchAssign(const std::vector<size_t> &new_
 
     TIMER_START(t)
     if (DEBUG_PRINT) {
-        fmt::print("        -Assigning {} orders to vehicles through SBA...\n", new_received_order_ids.size());
+        fmt::print("        -Assigning {} orders to vehicles through SBA...\n",
+                   new_received_order_ids.size());
     }
 
     // 1. Compute all possible vehicle order pairs, each indicating that the order can be served by the vehicle.
@@ -27,12 +28,12 @@ void AssignOrdersThroughSingleRequestBatchAssign(const std::vector<size_t> &new_
                                                                          system_time_ms, router_func);
 
     // 2. Score the candidate vehicle_order_pairs.
-    ScoreVtPairsWithNumOfOrdersAndIncreasedDelay(feasible_vehicle_order_pairs, orders, vehicles, system_time_ms);
+    ScoreVtPairsWithNumOfOrdersAndScheduleCost(feasible_vehicle_order_pairs, orders, vehicles, system_time_ms);
 
     // 3. Compute the assignment policy based on the scores, indicating which vehicle to pick which order.
-//    auto selected_vehicle_order_pair_indices = IlpAssignment(feasible_vehicle_order_pairs,
-//                                                             new_received_order_ids, orders, vehicles);
-    auto selected_vehicle_order_pair_indices = GreedyAssignment(feasible_vehicle_order_pairs);
+    auto selected_vehicle_order_pair_indices = IlpAssignment(feasible_vehicle_order_pairs,
+                                                             new_received_order_ids, orders, vehicles);
+//    auto selected_vehicle_order_pair_indices = GreedyAssignment(feasible_vehicle_order_pairs);
 
     // 4. Update the assigned vehicles' schedules and the assigned orders' statuses.
     UpdScheduleForVehiclesInSelectedVtPairs(feasible_vehicle_order_pairs, selected_vehicle_order_pair_indices,

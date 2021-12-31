@@ -156,7 +156,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::RunCycle(std::string progress_ph
     // 2. Generate orders.
     const auto new_received_order_ids = GenerateOrders();
 
-    // 3. Assign pending orders to vehicles.
+    // 3. Assign orders to vehicles.
     for (auto &vehicle : vehicles_) { vehicle.schedule_has_been_updated_at_current_epoch = false; }
     if (system_time_ms_ > main_sim_start_time_ms_ && system_time_ms_ <= main_sim_end_time_ms_) {
         if (dispatcher_ == DispatcherMethod::GI) {
@@ -439,9 +439,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
             fmt::format("{}:{:02d}:{:02d}", time_consumed_hour_2, time_consumed_min_2, time_consumed_s_2);
 
     // Get some system configurations.
-    auto file_path = platform_config_.data_file_path.path_to_taxi_data;
-    auto request_number = file_path.substr(file_path.length() - 9, 5);
-    if (request_number.substr(0, 1) == "-") { request_number = request_number.substr(1, 4); }
+    auto taxi_data_file_name = platform_config_.data_file_path.taxi_data_file_name;
     auto sim_start_time_date = platform_config_.simulation_config.simulation_start_time;
     auto sim_end_time_date = ConvertTimeSecondToDate(
             ConvertTimeDateToSeconds(sim_start_time_date) + system_shutdown_time_ms_ / 1000);
@@ -477,7 +475,7 @@ void Platform<RouterFunc, DemandGeneratorFunc>::CreateReport(std::time_t simulat
                platform_config_.simulation_config.winddown_duration_min * 60 / (cycle_ms_ / 1000), num_of_epochs);
     fmt::print("  - Order Config: density = {} ({}), max_wait = {} s. (Δt = {} s).\n",
                platform_config_.mod_system_config.request_config.request_density,
-               request_number,
+               taxi_data_file_name,
                platform_config_.mod_system_config.request_config.max_pickup_wait_time_s,
                cycle_ms_ / 1000);
     fmt::print("  - Dispatch Config: dispatcher = {}, rebalancer = {}.\n",

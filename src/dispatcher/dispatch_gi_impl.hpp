@@ -18,10 +18,11 @@ void AssignOrdersThroughGreedyInsertion(const std::vector<size_t> &new_received_
                                         RouterFunc &router_func) {
     TIMER_START(t)
     if (DEBUG_PRINT) {
-        fmt::print("        -Assigning {} orders to vehicles through GI...\n", new_received_order_ids.size());
+        fmt::print("        -Assigning {} orders to vehicles through GI...\n",
+                   new_received_order_ids.size());
     }
 
-    // Assigning in the first-in-first-out manner.
+    // Assigning new_received_orders in the first-in-first-out manner.
     for (auto order_id : new_received_order_ids) {
         auto &order = orders[order_id];
         HeuristicInsertionOfOneOrder(order, orders, vehicles, system_time_ms, router_func);
@@ -55,7 +56,10 @@ void HeuristicInsertionOfOneOrder(Order &order,
         auto result_this_vehicle = ComputeScheduleOfInsertingOrderToVehicle(
                 order, orders, vehicle, basic_schedules, system_time_ms, router_func);
         if (!result_this_vehicle.success) { continue; }
-        ScoreVtPairWithIncreasedDelay(result_this_vehicle, orders, vehicles, system_time_ms);
+        // Compute the score as minus the increased schedule cost. The smaller the cost, the higher the score.
+        result_this_vehicle.score = ComputeScheduleCost(vehicle.schedule, orders, vehicle, system_time_ms)
+                                    - result_this_vehicle.best_schedule_cost_ms;
+        assert(result_this_vehicle.score <= 0);
         if (result_this_vehicle.score > scheduling_result.score) {
             scheduling_result = std::move(result_this_vehicle);
         }

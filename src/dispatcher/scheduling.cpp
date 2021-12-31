@@ -44,45 +44,22 @@ uint32_t ComputeScheduleCost(const std::vector<Waypoint> &schedule,
     return cost_total_delay_ms;
 }
 
-void ScoreVtPairWithIncreasedDelay(SchedulingResult &vehicle_trip_pair,
-                                   const std::vector<Order> &orders,
-                                   const std::vector<Vehicle> &vehicles,
-                                   uint64_t system_time_ms,
-                                   bool is_reoptimization) {
-    auto &vehicle = vehicles[vehicle_trip_pair.vehicle_id];
-    vehicle_trip_pair.score = ComputeScheduleCost(vehicle.schedule, orders, vehicle, system_time_ms)
-                              - vehicle_trip_pair.best_schedule_cost_ms;
-    if (!is_reoptimization) {
-        assert(vehicle_trip_pair.score <= 0);
-    } else {
-        if (vehicle_trip_pair.trip_ids.empty()) {
-            int deviation_due_to_data_structure = 5;
-            assert(vehicle_trip_pair.score + deviation_due_to_data_structure * 10 >= 0);
-        }
-    }
-}
+void ScoreVtPairsWithNumOfOrdersAndScheduleCost(std::vector<SchedulingResult> &vehicle_trip_pairs,
+                                                const std::vector<Order> &orders,
+                                                const std::vector<Vehicle> &vehicles,
+                                                uint64_t system_time_ms) {
 
-void ScoreVtPairsWithNumOfOrdersAndIncreasedDelay(std::vector<SchedulingResult> &vehicle_trip_pairs,
-                                                 const std::vector<Order> &orders,
-                                                 const std::vector<Vehicle> &vehicles,
-                                                 uint64_t system_time_ms,
-                                                 bool is_reoptimization) {
-    // 1. Score the vt_pairs with the increased delay cause by inserting new orders.
-    for (auto &vt_pair : vehicle_trip_pairs) {
-        ScoreVtPairWithIncreasedDelay(vt_pair, orders, vehicles, system_time_ms, is_reoptimization);
-    }
-
-    // 2. Get the coefficients for NumOfOrders and IncreasedDelay.
-    int32_t max_score_abs = 1;
+    // 1. Get the coefficients for NumOfOrders and ScheduleCost.
+    int32_t max_schedule_cost = 1;
     for (const auto &vt_pair :  vehicle_trip_pairs) {
-        if (abs(vt_pair.score) > max_score_abs) { max_score_abs = abs(vt_pair.score); }
+        if (vt_pair.best_schedule_cost_ms > max_schedule_cost) { max_schedule_cost = vt_pair.best_schedule_cost_ms; }
     }
     int num_length = 1;
-    while ( max_score_abs /= 10 ) { num_length++; }
+    while ( max_schedule_cost /= 10 ) { num_length++; }
     int reward_for_serving_an_order = pow(10, num_length);
 
-    // 3. Re-score the vt_pairs with NumOfOrders and IncreasedDelay.
+    // 2. Score the vt_pairs with NumOfOrders and ScheduleCost.
     for (auto &vt_pair : vehicle_trip_pairs) {
-        vt_pair.score = reward_for_serving_an_order * vt_pair.trip_ids.size() + vt_pair.score / 1e3;
+        vt_pair.score = reward_for_serving_an_order * vt_pair.trip_ids.size() - vt_pair.best_schedule_cost_ms / 1e3;
     }
 }

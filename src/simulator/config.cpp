@@ -24,7 +24,10 @@ PlatformConfig load_platform_config(const std::string &path_to_platform_config, 
     platform_config.data_file_path.path_to_travel_distance_table =
             root_directory + platform_config_yaml["data_file_path"]["travel_distance_table"].as<std::string>();
     platform_config.data_file_path.path_to_taxi_data =
-            root_directory + platform_config_yaml["data_file_path"]["taxi_data"].as<std::string>();
+            root_directory + platform_config_yaml["data_file_path"]["taxi_data"].as<std::string>() +
+                    platform_config_yaml["data_file_path"]["data_file"].as<std::string>();
+    platform_config.data_file_path.taxi_data_file_name =
+            platform_config_yaml["data_file_path"]["data_file"].as<std::string>();
 
     platform_config.area_config.lon_min =
             platform_config_yaml["area_config"]["lon_min"].as<float>();

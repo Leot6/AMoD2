@@ -16,6 +16,7 @@ struct DataFilePath {
     std::string path_to_mean_travel_time_table = "";
     std::string path_to_travel_distance_table = "";
     std::string path_to_taxi_data = "";
+    std::string taxi_data_file_name = "";
 };
 
 /// \brief Config that describes the simulated area.
