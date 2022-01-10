@@ -22,7 +22,7 @@ mod_system_config:
     rebalancer: "NPO"        # 3 options: NONE, NPO, RVS
   fleet_config:
     fleet_size: 2000
-    veh_capacity: 8
+    veh_capacity: 6
   request_config:
     request_density: 1    # <= 1
     max_pickup_wait_time_min: 5

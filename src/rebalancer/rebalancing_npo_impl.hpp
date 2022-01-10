@@ -36,9 +36,6 @@ void RepositionIdleVehiclesToNearestPendingOrders(const std::vector<Order> &orde
     for (const auto &vehicle : vehicles) {
         if (vehicle.status != VehicleStatus::IDLE) { continue; }
         for (auto order_id : pending_order_ids) {
-//    for (auto order_id : pending_order_ids) {
-//        for (const auto &vehicle : vehicles) {
-//            if (vehicle.status != VehicleStatus::IDLE) { continue; }
             auto rebalancing_route = router_func(vehicle.pos, orders[order_id].origin, RoutingType::TIME_ONLY);
             std::vector<Waypoint> rebalancing_schedule =
                     {Waypoint{orders[order_id].origin, WaypointOp::REPOSITION,
