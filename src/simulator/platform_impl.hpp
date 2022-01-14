@@ -47,6 +47,14 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
     system_shutdown_time_ms_ =
         main_sim_end_time_ms_ +
         static_cast<uint64_t>(platform_config_.simulation_config.winddown_duration_min * 60 * 1000);
+    std::string simulation_start_time = platform_config_.simulation_config.simulation_start_time;
+    std::string simulation_max_end_time =
+            platform_config_.simulation_config.simulation_start_time.substr(0,10) + " 23:59:59";
+    uint64_t remaining_time_of_the_day_ms =
+            ComputeTheAccumulatedSecondsFrom0Clock(simulation_max_end_time) * 1000 -
+            ComputeTheAccumulatedSecondsFrom0Clock(simulation_start_time) * 1000;
+    assert(remaining_time_of_the_day_ms >= system_shutdown_time_ms_
+    && "[ERROR] WRONG TIME / DURATION SETTING! Please check the simulation start time or duration in config!");
 
     // Initialize the dispatcher and the rebalancer.
     if (platform_config_.mod_system_config.dispatch_config.dispatcher == "GI") {
@@ -56,7 +64,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
     } else if (platform_config_.mod_system_config.dispatch_config.dispatcher == "OSP") {
         dispatcher_ = DispatcherMethod::OSP;
     } else {
-        assert(false && "[DEBUG] WRONG DISPATCHER SETTING! Please check the name of dispatcher in config!");
+        assert(false && "[ERROR] WRONG DISPATCHER SETTING! Please check the name of dispatcher in config!");
     }
     if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NONE") {
        rebalancer_ = RebalancerMethod::NONE;
@@ -65,7 +73,7 @@ Platform<RouterFunc, DemandGeneratorFunc>::Platform(PlatformConfig _platform_con
     } else if (platform_config_.mod_system_config.dispatch_config.rebalancer == "NPO") {
         rebalancer_ = RebalancerMethod::NPO;
     } else {
-        assert(false && "[DEBUG] WRONG REBALANCER SETTING! Please check the name of rebalancer in config!");
+        assert(false && "[ERROR] WRONG REBALANCER SETTING! Please check the name of rebalancer in config!");
     }
 
     // Open the output datalog file.

@@ -9,7 +9,7 @@ data_file_path:
   mean_travel_time_table: "/datalog-gitignore/map-data/mean-table.csv"
   travel_distance_table: "/datalog-gitignore/map-data/dist-table.csv"
   taxi_data: "/datalog-gitignore/taxi-data/manhattan-taxi-"
-  data_file: "20160525-400k.csv"
+  data_file: "20160406"
   background_map_image: "/media-gitignore/manhattan.jpg"
 area_config: 
   lon_min: -74.0300
@@ -21,17 +21,17 @@ mod_system_config:
     dispatcher: "SBA"        # 3 options: GI, SBA, OSP
     rebalancer: "NPO"        # 3 options: NONE, NPO, RVS
   fleet_config:
-    fleet_size: 2000
-    veh_capacity: 6
+    fleet_size: 1000
+    veh_capacity: 4
   request_config:
     request_density: 1    # <= 1
     max_pickup_wait_time_min: 5
     max_onboard_detour: 1.3   # < 2
 simulation_config:
-  simulation_start_time: "2016-05-25 18:30:00"  # peak hour: 18:00:00 - 20:00:00
+  simulation_start_time: "2016-05-25 00:00:00"  # peak hour: 18:00:00 - 20:00:00
   cycle_s: 30
   warmup_duration_min: 30        # 30 min
-  simulation_duration_min: 60   # <= 1370 min
+  simulation_duration_min: 1370   # <= 1370 min
   winddown_duration_min: 39      # 39 min
   debug_print: false
 output_config:
